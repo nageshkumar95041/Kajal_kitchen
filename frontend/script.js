@@ -90,6 +90,10 @@ document.addEventListener('DOMContentLoaded', () => {
         initializePaymentPage();
     }
 
+    if (window.location.pathname.includes('login.html')) {
+        initializeGoogleLogin();
+    }
+
     updateAuthNav();
 
     // WebSocket Integration for real-time updates
@@ -776,6 +780,34 @@ async function handleGoogleLogin(response) {
         }
     } catch (error) {
         showCustomAlert('Server error. Ensure the backend is running.');
+    }
+}
+
+async function initializeGoogleLogin() {
+    const container = document.getElementById('google-btn-container');
+    if (!container) return;
+
+    try {
+        const configRes = await fetch(`${API_BASE_URL}/api/config/google`);
+        const { clientId } = await configRes.json();
+
+        // Wait for Google library to load if it hasn't already
+        const checkGoogle = setInterval(() => {
+            if (typeof google !== 'undefined' && google.accounts) {
+                clearInterval(checkGoogle);
+                google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleGoogleLogin,
+                    auto_prompt: false
+                });
+                google.accounts.id.renderButton(
+                    container,
+                    { theme: 'outline', size: 'large', type: 'standard' }
+                );
+            }
+        }, 100);
+    } catch (error) {
+        console.error('Failed to load Google configuration.');
     }
 }
 

@@ -41,8 +41,8 @@ const EMAIL_PASS = process.env.EMAIL_PASS;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
-if (!SECRET_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET || !EMAIL_USER || !EMAIL_PASS || !STRIPE_PUBLISHABLE_KEY) {
-    console.error("FATAL ERROR: A required secret (JWT, Stripe, Webhook, or Publishable Key) is not defined in .env file.");
+if (!SECRET_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET || !EMAIL_USER || !EMAIL_PASS || !STRIPE_PUBLISHABLE_KEY || !GOOGLE_CLIENT_ID) {
+    console.error("FATAL ERROR: A required secret (JWT, Stripe, Webhook, Publishable Key, or Google Client ID) is not defined in .env file.");
     process.exit(1);
 }
 
@@ -167,6 +167,10 @@ function authenticateUser(req, res, next) {
 
 app.get('/api/config/stripe', (req, res) => {
     res.json({ publishableKey: STRIPE_PUBLISHABLE_KEY });
+});
+
+app.get('/api/config/google', (req, res) => {
+    res.json({ clientId: GOOGLE_CLIENT_ID });
 });
 
 app.get('/api/menu', async (req, res) => {
