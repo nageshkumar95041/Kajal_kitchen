@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard | Kajal Kitchen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="navbar" class="scrolled">
+        <div class="logo" style="color: #333;">Kajal Kitchen Admin</div>
+        <ul class="nav-links">
+            <li><a href="index.html" style="color: #333;">Back to Site</a></li>
+        </ul>
+    </nav>
+
+    <section class="admin-page">
+        <h2>Live Order Dashboard</h2>
+        <p>Manage incoming customer orders here.</p>
+        <div id="admin-orders-container" class="admin-grid"></div>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 Kajal Kitchen. Admin Portal.</p>
+    </footer>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | Kajal Kitchen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="navbar" class="scrolled">
+        <div class="logo">Kajal Kitchen</div>
+        <ul class="nav-links">
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#menu">Menu</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="register.html">Sign Up</a></li>
+        </ul>
+    </nav>
+
+    <section class="auth-page">
+        <div class="auth-container">
+            <h2>My Profile</h2>
+            <form class="auth-form" onsubmit="handleProfileUpdate(event)">
+                <input type="text" id="profile-name" placeholder="Full Name" required>
+                <input type="text" id="profile-contact" placeholder="Email or Phone Number" required>
+                <p style="font-size: 0.85rem; color: #666; text-align: left; margin: 0;">Leave password blank to keep your current one.</p>
+                <input type="password" id="profile-password" placeholder="New Password" minlength="6">
+                <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Update Profile</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 Kajal Kitchen. All Rights Reserved.</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>

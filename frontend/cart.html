@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart | Kajal Kitchen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="navbar" class="scrolled">
+        <div class="logo">Kajal Kitchen</div>
+        <ul class="nav-links">
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#menu">Menu</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+            <li><a href="cart.html" style="color: #e67e22;">Cart (<span id="cart-count">0</span>)</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="register.html">Sign Up</a></li>
+        </ul>
+    </nav>
+
+    <section class="cart-page">
+        <div class="cart-container">
+            <h2>Your Order</h2>
+            <div id="cart-items"></div>
+            <div class="cart-total">
+                Total: <span id="cart-total-price">₹0</span>
+            </div>
+            <div style="text-align: right; margin-top: 2rem;">
+                <button class="btn" onclick="checkoutCart()">Checkout</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 Kajal Kitchen. All Rights Reserved.</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kajal Kitchen | Fine Dining</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="logo">Kajal Kitchen</div>
+        <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#menu">Menu</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="register.html">Sign Up</a></li>
+        </ul>
+    </nav>
+
+    <header id="home" class="hero">
+        <div class="hero-content">
+            <h1>Taste the Magic of Fine Dining</h1>
+            <p>Experience authentic flavors with a modern twist.</p>
+            <a href="#menu" class="btn">View Our Menu</a>
+        </div>
+    </header>
+
+    <section id="menu" class="menu-section">
+        <h2>Our Featured Dishes</h2>
+        <div class="menu-container">
+            <div class="menu-card">
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Truffle Pasta</h3>
+                <p>Handmade pasta with creamy black truffle sauce.</p>
+                <div class="card-footer">
+                    <span class="price">₹850</span>
+                    <button class="btn-order" onclick="orderItem('Truffle Pasta', 850)">Order Now</button>
+                </div>
+            </div>
+            <div class="menu-card">
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1485921325833-c519f76c4927?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Grilled Salmon</h3>
+                <p>Wild-caught salmon with lemon butter glaze.</p>
+                <div class="card-footer">
+                    <span class="price">₹1200</span>
+                    <button class="btn-order" onclick="orderItem('Grilled Salmon', 1200)">Order Now</button>
+                </div>
+            </div>
+            <div class="menu-card">
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1563805042-7684c8a9e9cb?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Chocolate Lava Cake</h3>
+                <p>Decadent dark chocolate cake with a molten center.</p>
+                <div class="card-footer">
+                    <span class="price">₹350</span>
+                    <button class="btn-order" onclick="orderItem('Chocolate Lava Cake', 350)">Order Now</button>
+                </div>
+            </div>
+            <div class="menu-card">
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1631452180519-c014fe946bc0?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Matar Paneer</h3>
+                <p>Classic North Indian dish made with peas and paneer in a rich tomato sauce.</p>
+                <div class="card-footer">
+                    <span class="price">₹450</span>
+                    <button class="btn-order" onclick="orderItem('Matar Paneer', 450)">Order Now</button>
+                </div>
+            </div>
+            <div class="menu-card">
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Chole Bhatore</h3>
+                <p>Spicy chickpea curry served with fluffy, deep-fried bread.</p>
+                <div class="card-footer">
+                    <span class="price">₹250</span>
+                    <button class="btn-order" onclick="orderItem('Chole Bhatore', 250)">Order Now</button>
+                </div>
+            </div>
+            <div class="menu-card">
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Classic Burger</h3>
+                <p>Juicy beef patty with fresh lettuce, tomato, and our secret sauce.</p>
+                <div class="card-footer">
+                    <span class="price">₹350</span>
+                    <button class="btn-order" onclick="orderItem('Classic Burger', 350)">Order Now</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about-section">
+        <h2>About Us</h2>
+        <p>Welcome to Kajal Kitchen, where culinary excellence meets warm hospitality. We pride ourselves on sourcing the freshest local ingredients to craft unforgettable dishes. Whether you're craving authentic traditional flavors or modern culinary twists, our passionate chefs are here to delight your taste buds.</p>
+    </section>
+
+    <section id="contact" class="contact-section">
+        <h2>Contact Us</h2>
+        <div class="contact-container">
+            <form class="contact-form" onsubmit="handleContactSubmit(event);">
+                <input type="text" placeholder="Your Name" required>
+                <input type="email" placeholder="Your Email" required>
+                <textarea rows="5" placeholder="Your Message" required></textarea>
+                <button type="submit" class="btn">Send Message</button>
+            </form>
+            <div class="contact-info">
+                <p><strong>Address:</strong> 123 Culinary Lane, Food City</p>
+                <p><strong>Phone:</strong> (555) 123-4567</p>
+                <p><strong>Email:</strong> info@kajalkitchen.com</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 Kajal Kitchen. All Rights Reserved.</p>
+        <p>123 Culinary Lane, Food City | (555) 123-4567</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Checkout | Kajal Kitchen</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <nav id="navbar" class="scrolled">
+        <div class="logo">Kajal Kitchen</div>
+        <ul class="nav-links">
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#menu">Menu</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="register.html">Sign Up</a></li>
+        </ul>
+    </nav>
+
+    <section class="payment-page">
+        <div class="payment-container">
+            <h2>Secure Payment</h2>
+            <!-- This form will be handled by Stripe.js -->
+            <form id="payment-form" class="payment-form">
+                <input type="text" id="card-name" placeholder="Billing Name" required>
+                <div id="payment-element" style="border: 1px solid #ccc; padding: 12px; border-radius: 5px; margin-top: 0.5rem;"></div>
+                <button id="submit-payment-btn" class="btn" style="width: 100%; margin-top: 1rem;">Pay Now</button>
+                <div id="payment-message" style="color: red; text-align: center; margin-top: 1rem;"></div>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 Kajal Kitchen. All Rights Reserved.</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
