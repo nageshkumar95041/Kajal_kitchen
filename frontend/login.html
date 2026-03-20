@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Kajal Kitchen</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <nav id="navbar" class="scrolled">
@@ -14,10 +15,13 @@
             <li><a href="index.html#menu">Menu</a></li>
             <li><a href="index.html#about">About</a></li>
             <li><a href="index.html#contact">Contact</a></li>
-            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
             <li><a href="login.html" style="color: #e67e22;">Login</a></li>
             <li><a href="register.html">Sign Up</a></li>
         </ul>
+        <div class="nav-right">
+            <a href="cart.html" class="nav-cart-icon">Cart (<span id="cart-count">0</span>)</a>
+            <div class="menu-toggle" id="mobile-menu">&#9776;</div>
+        </div>
     </nav>
 
     <section class="auth-page">
@@ -28,6 +32,24 @@
                 <input type="password" id="login-password" placeholder="Password" required>
                 <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Login</button>
             </form>
+            
+            <div style="margin: 1.5rem 0; text-align: center; position: relative;">
+                <hr style="border: 0; border-top: 1px solid #ddd;">
+                <span style="background: #fff; padding: 0 10px; color: #666; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 0.9rem;">or</span>
+            </div>
+
+            <div id="g_id_onload"
+                 data-client_id="1040753017102-kfocfmn75mlrgv1n3jpo45hken15u6m8.apps.googleusercontent.com"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleLogin"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 style="display: flex; justify-content: center;">
+            </div>
         </div>
     </section>
 

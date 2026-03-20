@@ -21,6 +21,7 @@ html {
     align-items: center;
     padding: 1.5rem 5%;
     background-color: transparent;
+    flex-wrap: wrap;
     position: fixed;
     width: 100%;
     top: 0;
@@ -46,9 +47,50 @@ html {
     transition: color 0.3s ease;
 }
 
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-cart-icon {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-cart-icon:hover {
+    color: #e67e22;
+}
+
+#navbar.scrolled .nav-cart-icon {
+    color: #333;
+}
+#navbar.scrolled .nav-cart-icon:hover {
+    color: #e67e22;
+}
+#navbar.menu-open .nav-cart-icon {
+    color: #333 !important;
+}
+
+.menu-toggle {
+    display: none;
+    font-size: 1.8rem;
+    color: #fff;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+#navbar.scrolled .menu-toggle {
+    color: #333;
+}
+
 .nav-links {
     display: flex;
     list-style: none;
+    margin-left: auto;
+    margin-right: 2rem;
 }
 
 .nav-links li {
@@ -69,7 +111,7 @@ html {
 /* Hero Section */
 .hero {
     height: 100vh;
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1950&q=80') center/cover;
+    background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=1950&q=80') center/cover;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -79,13 +121,22 @@ html {
 }
 
 .hero h1 {
-    font-size: 4rem;
+    font-size: 3.5rem;
     margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.hero h1 em {
+    color: #e67e22;
+    font-style: normal;
 }
 
 .hero p {
     font-size: 1.2rem;
     margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .btn {
@@ -102,6 +153,51 @@ html {
 
 .btn:hover {
     background-color: #d35400;
+}
+
+/* Features Section */
+.features-section {
+    padding: 4rem 5%;
+    background-color: #fff;
+    text-align: center;
+}
+
+.features-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.feature-box {
+    flex: 1;
+    min-width: 250px;
+    padding: 2rem;
+    background: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
+}
+
+.feature-box:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.feature-box h3 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.feature-box p {
+    color: #666;
+    font-size: 0.95rem;
 }
 
 /* Menu Section */
@@ -196,11 +292,70 @@ footer p {
 
 /* Responsive */
 @media (max-width: 768px) {
+    #navbar {
+        padding: 1rem 5%;
+    }
+    #navbar.scrolled {
+        padding: 0.8rem 5%;
+    }
+    #navbar.menu-open {
+        background-color: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+    }
+    #navbar.menu-open .logo,
+    #navbar.menu-open .nav-links a,
+    #navbar.menu-open .menu-toggle {
+        color: #333 !important;
+    }
+    .menu-toggle {
+        display: block;
+    }
     .nav-links {
-        display: none;
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        text-align: center;
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, padding 0.4s ease-in-out;
+        order: 3;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .nav-links.active {
+        max-height: 400px;
+        opacity: 1;
+        padding-top: 1rem;
+        padding-bottom: 0.5rem;
+    }
+    .nav-links li {
+        margin: 0.8rem 0;
+        font-size: 1.1rem;
     }
     .hero h1 {
-        font-size: 2.8rem;
+        font-size: 2.3rem;
+    }
+    .hero p {
+        font-size: 1rem;
+    }
+    .menu-section h2, .about-section h2, .contact-section h2 {
+        font-size: 2rem;
+    }
+    .menu-card {
+        width: 100%;
+        max-width: 350px;
+    }
+    .form-row {
+        flex-direction: column;
+        gap: 1.2rem;
+    }
+    .cart-page, .payment-page, .admin-page, .auth-page {
+        padding-top: 11rem;
+    }
+    .admin-grid {
+        grid-template-columns: 1fr;
     }
 }
 

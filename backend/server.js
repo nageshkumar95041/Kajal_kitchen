@@ -7,6 +7,7 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+const { OAuth2Client } = require('google-auth-library');
 require('dotenv').config();
 
 const app = express();
@@ -38,6 +39,7 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
 if (!SECRET_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET || !EMAIL_USER || !EMAIL_PASS || !STRIPE_PUBLISHABLE_KEY) {
     console.error("FATAL ERROR: A required secret (JWT, Stripe, Webhook, or Publishable Key) is not defined in .env file.");
@@ -45,6 +47,7 @@ if (!SECRET_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET || !EMAIL_USER |
 }
 
 const stripe = require('stripe')(STRIPE_SECRET_KEY);
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // MongoDB Connection (Online / MongoDB Atlas)
 mongoose.connect(process.env.MONGODB_URI)
@@ -109,17 +112,22 @@ async function seedAdmin() {
 
 // Seed Default Menu if Empty
 async function seedMenu() {
+    // Remove old fine-dining items to ensure the new homestyle menu takes effect
+    const oldMenu = await MenuItem.findOne({ name: 'Truffle Pasta' });
+    if (oldMenu) {
+        await MenuItem.deleteMany({});
+    }
+
     const count = await MenuItem.countDocuments();
     if (count === 0) {
         await MenuItem.insertMany([
-            { name: 'Truffle Pasta', price: 850 },
-            { name: 'Grilled Salmon', price: 1200 },
-            { name: 'Chocolate Lava Cake', price: 350 },
-            { name: 'Matar Paneer', price: 450 },
-            { name: 'Chole Bhatore', price: 250 },
-            { name: 'Classic Burger', price: 350 }
+            { name: 'Special Thali', price: 180, description: '4 Roti, Rice, Seasonal Sabzi, Dal Tadka, and fresh Salad.' },
+            { name: 'Rajma Chawal', price: 140, description: 'Comforting, slow-cooked Rajma served with steaming hot Jeera Rice.' },
+            { name: 'Matar Paneer', price: 200, description: 'Classic North Indian dish made with peas and soft paneer in a rich, healthy tomato sauce.' },
+            { name: 'Chole Bhature', price: 150, description: 'Spicy homemade chickpea curry served with fluffy, perfectly fried bhature.' },
+            { name: 'Aloo Paratha', price: 120, description: 'Two stuffed whole-wheat Aloo Parathas served with fresh homemade curd and pickle.' }
         ]);
-        console.log('Default menu items seeded to database.');
+        console.log('Default Indian homestyle menu items seeded to database.');
     }
 }
 
@@ -461,6 +469,42 @@ app.post('/api/login', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ success: false, message: 'Login failed.' });
+    }
+});
+
+app.post('/api/google-login', async (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ success: false, message: 'Token is required' });
+
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: token,
+            audience: GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const email = payload['email'].toLowerCase();
+        const name = payload['name'];
+
+        let user = await User.findOne({ contact: email });
+        
+        if (!user) {
+            // Create a new user with a random strong password since they logged in via Google
+            const randomPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+            const hashedPassword = await bcrypt.hash(randomPassword, 10);
+            
+            user = await User.create({ 
+                name: name, 
+                contact: email, 
+                password: hashedPassword, 
+                role: 'user' 
+            });
+        }
+
+        const jwtToken = jwt.sign({ id: user._id, role: user.role }, SECRET_KEY, { expiresIn: '2h' });
+        res.json({ success: true, token: jwtToken, user: { name: user.name, contact: user.contact, role: user.role } });
+    } catch (error) {
+        console.error('Google verification error:', error);
+        res.status(401).json({ success: false, message: 'Invalid Google token' });
     }
 });
 

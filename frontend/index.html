@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kajal Kitchen | Fine Dining</title>
+    <title>Kajal Kitchen | Ghar Jaisa Khana, Delivered</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,87 +14,102 @@
             <li><a href="#menu">Menu</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
             <li><a href="login.html">Login</a></li>
             <li><a href="register.html">Sign Up</a></li>
         </ul>
+        <div class="nav-right">
+            <a href="cart.html" class="nav-cart-icon">Cart (<span id="cart-count">0</span>)</a>
+            <div class="menu-toggle" id="mobile-menu">&#9776;</div>
+        </div>
     </nav>
 
     <header id="home" class="hero">
         <div class="hero-content">
-            <h1>Taste the Magic of Fine Dining</h1>
-            <p>Experience authentic flavors with a modern twist.</p>
-            <a href="#menu" class="btn">View Our Menu</a>
+            <h1><em>Ghar Jaisa Khana</em>,<br>Delivered to You.</h1>
+            <p>Missing home? Enjoy 100% homemade, fresh, and healthy meals prepared with love. No artificial flavors, just pure goodness.</p>
+            <a href="#menu" class="btn">Explore Today's Menu</a>
         </div>
     </header>
 
+    <section id="features" class="features-section">
+        <div class="features-container">
+            <div class="feature-box">
+                <div class="feature-icon">🌿</div>
+                <h3>Fresh Ingredients</h3>
+                <p>We source local, fresh veggies daily. We never use stale or frozen ingredients.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">👩‍🍳</div>
+                <h3>100% Homemade</h3>
+                <p>Cooked in a real home kitchen with motherly care and strict hygiene standards.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">❤️</div>
+                <h3>Zero Preservatives</h3>
+                <p>Healthy, guilt-free eating that is light on your stomach for your everyday meals.</p>
+            </div>
+        </div>
+    </section>
+
     <section id="menu" class="menu-section">
-        <h2>Our Featured Dishes</h2>
+        <h2>Today's Fresh Menu</h2>
         <div class="menu-container">
             <div class="menu-card">
-                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=400&q=80');"></div>
-                <h3>Truffle Pasta</h3>
-                <p>Handmade pasta with creamy black truffle sauce.</p>
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Kajal's Special Thali</h3>
+                <p>4 Roti, Rice, Seasonal Sabzi, Dal Tadka, and fresh Salad.</p>
                 <div class="card-footer">
-                    <span class="price">₹850</span>
-                    <button class="btn-order" onclick="orderItem('Truffle Pasta', 850)">Order Now</button>
+                    <span class="price">₹180</span>
+                    <button class="btn-order" onclick="orderItem('Special Thali', 180)">Order Now</button>
                 </div>
             </div>
             <div class="menu-card">
-                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1485921325833-c519f76c4927?auto=format&fit=crop&w=400&q=80');"></div>
-                <h3>Grilled Salmon</h3>
-                <p>Wild-caught salmon with lemon butter glaze.</p>
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Homestyle Rajma Chawal</h3>
+                <p>Comforting, slow-cooked Rajma served with steaming hot Jeera Rice.</p>
                 <div class="card-footer">
-                    <span class="price">₹1200</span>
-                    <button class="btn-order" onclick="orderItem('Grilled Salmon', 1200)">Order Now</button>
-                </div>
-            </div>
-            <div class="menu-card">
-                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1563805042-7684c8a9e9cb?auto=format&fit=crop&w=400&q=80');"></div>
-                <h3>Chocolate Lava Cake</h3>
-                <p>Decadent dark chocolate cake with a molten center.</p>
-                <div class="card-footer">
-                    <span class="price">₹350</span>
-                    <button class="btn-order" onclick="orderItem('Chocolate Lava Cake', 350)">Order Now</button>
+                    <span class="price">₹140</span>
+                    <button class="btn-order" onclick="orderItem('Rajma Chawal', 140)">Order Now</button>
                 </div>
             </div>
             <div class="menu-card">
                 <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1631452180519-c014fe946bc0?auto=format&fit=crop&w=400&q=80');"></div>
                 <h3>Matar Paneer</h3>
-                <p>Classic North Indian dish made with peas and paneer in a rich tomato sauce.</p>
+                <p>Classic North Indian dish made with peas and soft paneer in a rich, healthy tomato sauce.</p>
                 <div class="card-footer">
-                    <span class="price">₹450</span>
-                    <button class="btn-order" onclick="orderItem('Matar Paneer', 450)">Order Now</button>
+                    <span class="price">₹200</span>
+                    <button class="btn-order" onclick="orderItem('Matar Paneer', 200)">Order Now</button>
                 </div>
             </div>
             <div class="menu-card">
                 <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=400&q=80');"></div>
-                <h3>Chole Bhatore</h3>
-                <p>Spicy chickpea curry served with fluffy, deep-fried bread.</p>
+                <h3>Chole Bhature</h3>
+                <p>Spicy homemade chickpea curry served with fluffy, perfectly fried bhature.</p>
                 <div class="card-footer">
-                    <span class="price">₹250</span>
-                    <button class="btn-order" onclick="orderItem('Chole Bhatore', 250)">Order Now</button>
+                    <span class="price">₹150</span>
+                    <button class="btn-order" onclick="orderItem('Chole Bhature', 150)">Order Now</button>
                 </div>
             </div>
             <div class="menu-card">
-                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80');"></div>
-                <h3>Classic Burger</h3>
-                <p>Juicy beef patty with fresh lettuce, tomato, and our secret sauce.</p>
+                <div class="card-img" style="background-image: url('https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80');"></div>
+                <h3>Aloo Paratha & Curd</h3>
+                <p>Two stuffed whole-wheat Aloo Parathas served with fresh homemade curd and pickle.</p>
                 <div class="card-footer">
-                    <span class="price">₹350</span>
-                    <button class="btn-order" onclick="orderItem('Classic Burger', 350)">Order Now</button>
+                    <span class="price">₹120</span>
+                    <button class="btn-order" onclick="orderItem('Aloo Paratha', 120)">Order Now</button>
                 </div>
             </div>
         </div>
     </section>
 
     <section id="about" class="about-section">
-        <h2>About Us</h2>
-        <p>Welcome to Kajal Kitchen, where culinary excellence meets warm hospitality. We pride ourselves on sourcing the freshest local ingredients to craft unforgettable dishes. Whether you're craving authentic traditional flavors or modern culinary twists, our passionate chefs are here to delight your taste buds.</p>
+        <h2>Our Story: Crafted with Love</h2>
+        <p>Kajal Kitchen started with a simple belief: nothing beats the taste, comfort, and health benefits of home-cooked food. We are not a commercial restaurant; we are a home kitchen dedicated to cooking wholesome and delicious meals just like your mother used to make. Whether you need a daily tiffin service for the office or a comforting weekend meal, we've got you covered.</p>
     </section>
 
     <section id="contact" class="contact-section">
-        <h2>Contact Us</h2>
+        <h2>Get in Touch / Monthly Subscriptions</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 2rem;">Have special dietary needs or looking for daily office tiffin deliveries? Send us a message!</p>
         <div class="contact-container">
             <form class="contact-form" onsubmit="handleContactSubmit(event);">
                 <input type="text" placeholder="Your Name" required>

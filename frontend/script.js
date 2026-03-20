@@ -14,6 +14,21 @@ function escapeHTML(str) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const navbar = document.getElementById('navbar');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (mobileMenu && navLinks) {
+        mobileMenu.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            navbar.classList.toggle('menu-open');
+        });
+        navLinks.addEventListener('click', (e) => {
+            if(e.target.tagName === 'A') {
+                navLinks.classList.remove('active');
+                navbar.classList.remove('menu-open');
+            }
+        });
+    }
 
     window.addEventListener('scroll', () => {
         if (window.scrollY > 50) {
@@ -732,6 +747,35 @@ async function handleLogin(event) {
         }
     } catch (error) {
         showCustomAlert('Server error. Ensure the backend is running on port 3000.');
+    }
+}
+
+async function handleGoogleLogin(response) {
+    const id_token = response.credential;
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/google-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: id_token })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            localStorage.setItem('loggedInUser', JSON.stringify(data.user));
+            localStorage.setItem('authToken', data.token);
+            
+            showCustomAlert('Login successful!', () => { 
+                if (data.user.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'index.html'; 
+                }
+            });
+        } else {
+            showCustomAlert(data.message || 'Google Login failed.');
+        }
+    } catch (error) {
+        showCustomAlert('Server error. Ensure the backend is running.');
     }
 }
 
