@@ -16,6 +16,9 @@ require('dotenv').config();
 
 const app = express();
 
+// Trust the first proxy (required for rate limiting behind a reverse proxy like Render)
+app.set('trust proxy', 1);
+
 app.use(helmet()); // Sets robust HTTP security headers (Clickjacking, XSS protection, etc.)
 
 app.post('/webhook', express.raw({type: 'application/json'}), handleStripeWebhook);
