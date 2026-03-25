@@ -1,5 +1,5 @@
-// If you hosted frontend and backend SEPARATELY (e.g., Vercel + Render), put your backend URL here:
-const PRODUCTION_BACKEND_URL = ''; // e.g. 'https://your-backend-api.onrender.com'
+// Leave empty if frontend and backend are hosted together on the same Render service
+const PRODUCTION_BACKEND_URL = ''; 
 
 // Automatically adapt to production domain, or use localhost:3000 for local dev
 const API_BASE_URL = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? 'http://localhost:3000' : (PRODUCTION_BACKEND_URL || window.location.origin);
@@ -168,6 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function orderItem(itemName, price) {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        showCustomAlert('Please login to add items to your cart.', () => {
+            window.location.href = 'login.html';
+        });
+        return;
+    }
+
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     let existing = cart.find(i => i.name === itemName);
     if (existing) {
@@ -194,8 +202,9 @@ function showStickyCart() {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     let sticky = document.getElementById('sticky-cart');
     if (!sticky) return;
+    const token = localStorage.getItem('authToken');
     
-    if (cart.length > 0) {
+    if (cart.length > 0 && token) {
         let count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
         let total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
         sticky.innerHTML = `
@@ -1759,38 +1768,57 @@ function updateAuthNav() {
     const loggedInUser = localStorage.getItem('loggedInUser');
     const navLinks = document.querySelector('.nav-links');
     
-    if (loggedInUser && navLinks) {
-        // Dynamically inject the My Orders link so we don't have to edit every HTML file manually
-        if (!navLinks.querySelector('a[href="my-orders.html"]')) {
-            const myOrdersLi = document.createElement('li');
-            myOrdersLi.innerHTML = '<a href="my-orders.html">My Orders</a>';
-            const loginLink = Array.from(navLinks.querySelectorAll('a')).find(a => a.textContent.includes('Login'));
-            navLinks.insertBefore(myOrdersLi, loginLink ? loginLink.parentElement : null);
-        }
+    if (!navLinks) return;
 
-        if (!navLinks.querySelector('a[href="profile.html"]')) {
-            const profileLi = document.createElement('li');
-            profileLi.innerHTML = '<a href="profile.html">Profile</a>';
-            const loginLink = Array.from(navLinks.querySelectorAll('a')).find(a => a.textContent.includes('Login'));
-            navLinks.insertBefore(profileLi, loginLink ? loginLink.parentElement : null);
+    // Hide or show cart links globally based on login status
+    const cartLinks = document.querySelectorAll('a[href="cart.html"]');
+    cartLinks.forEach(link => {
+        if (loggedInUser) {
+            if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'list-item';
+            else link.style.display = 'inline-block';
+        } else {
+            if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'none';
+            else link.style.display = 'none';
         }
+    });
 
-        const links = navLinks.querySelectorAll('a');
-        links.forEach(link => {
-            if (link.textContent.includes('Login')) {
-                link.textContent = 'Logout';
-                link.href = '#';
-                link.onclick = (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('loggedInUser');
-                    localStorage.removeItem('authToken');
-                    window.location.href = 'index.html';
-                };
-            }
-            if (link.textContent.includes('Sign Up')) {
-                link.parentElement.style.display = 'none';
-            }
-        });
+    // Remove all auth-related links first to prevent duplicates
+    navLinks.querySelectorAll('a').forEach(link => {
+        const text = link.textContent;
+        if (['Login', 'Sign Up', 'Logout', 'My Orders', 'Profile'].includes(text)) {
+            link.parentElement.remove();
+        }
+    });
+
+    if (loggedInUser) {
+        // Add user-specific links
+        const myOrdersLi = document.createElement('li');
+        myOrdersLi.innerHTML = '<a href="my-orders.html">My Orders</a>';
+        navLinks.appendChild(myOrdersLi);
+
+        const profileLi = document.createElement('li');
+        profileLi.innerHTML = '<a href="profile.html">Profile</a>';
+        navLinks.appendChild(profileLi);
+
+        const logoutLi = document.createElement('li');
+        const logoutLink = document.createElement('a');
+        logoutLink.textContent = 'Logout';
+        logoutLink.href = '#';
+        logoutLink.onclick = (e) => {
+            e.preventDefault();
+            handleLogout();
+        };
+        logoutLi.appendChild(logoutLink);
+        navLinks.appendChild(logoutLi);
+    } else {
+        // Add guest links
+        const loginLi = document.createElement('li');
+        loginLi.innerHTML = '<a href="login.html">Login</a>';
+        navLinks.appendChild(loginLi);
+
+        const signupLi = document.createElement('li');
+        signupLi.innerHTML = '<a href="register.html">Sign Up</a>';
+        navLinks.appendChild(signupLi);
     }
 }
 
@@ -1940,6 +1968,7 @@ function handleLogout() {
     showCustomAlert("Are you sure you want to log out?", () => {
         localStorage.removeItem('loggedInUser');
         localStorage.removeItem('authToken');
+        localStorage.removeItem('cart'); // Clear cart on logout
         window.location.href = 'index.html';
     });
 }
