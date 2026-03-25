@@ -28,34 +28,33 @@
         <div class="hero-content">
             <h1><em>Ghar Jaisa Khana</em>,<br>Delivered to You.</h1>
             <p>Missing home? Enjoy 100% homemade, fresh, and healthy meals prepared with love. No artificial flavors, just pure goodness.</p>
-            <a href="#menu" class="btn">Explore Today's Menu</a>
+            <div class="hero-cta">
+                <a href="#menu" class="btn">Order Now</a>
+                <a href="#menu" class="btn btn-secondary">View Menu</a>
+            </div>
         </div>
     </header>
 
-    <section id="features" class="features-section">
-        <div class="features-container">
-            <div class="feature-box">
-                <div class="feature-icon">🌿</div>
-                <h3>Fresh Ingredients</h3>
-                <p>We source local, fresh veggies daily. We never use stale or frozen ingredients.</p>
-            </div>
-            <div class="feature-box">
-                <div class="feature-icon">👩‍🍳</div>
-                <h3>100% Homemade</h3>
-                <p>Cooked in a real home kitchen with motherly care and strict hygiene standards.</p>
-            </div>
-            <div class="feature-box">
-                <div class="feature-icon">❤️</div>
-                <h3>Zero Preservatives</h3>
-                <p>Healthy, guilt-free eating that is light on your stomach for your everyday meals.</p>
-            </div>
-        </div>
-    </section>
-
     <section id="menu" class="menu-section">
-        <div id="dynamic-menu-container">
-            <p style="text-align: center; color: #666; font-size: 1.2rem; padding: 4rem;">Loading fresh menu...</p>
+        <h2 class="section-title">Explore Our Menu</h2>
+        <div class="menu-filters">
+            <div class="filter-group">
+                <label><input type="radio" name="veg-filter" value="all" checked> All</label>
+                <label><input type="radio" name="veg-filter" value="veg"> Veg Only</label>
+            </div>
+            <div class="filter-group">
+                <select id="price-filter">
+                    <option value="all">All Prices</option>
+                    <option value="0-150">Under ₹150</option>
+                    <option value="150-250">₹150 - ₹250</option>
+                    <option value="250+">Over ₹250</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><input type="checkbox" id="popular-filter"> ⭐ Popular Items</label>
+            </div>
         </div>
+        <div id="dynamic-menu-container"><!-- JS will populate this --></div>
     </section>
 
     <section id="about" class="about-section">
@@ -90,6 +89,62 @@
         </div>
     </section>
 
+    <section id="testimonials" class="testimonials-section" style="background-color: #fffaf5;">
+        <h2 style="font-size: 2.5rem; color: #2c3e50; margin-bottom: 1rem;">Loved by Our NCR Family ❤️</h2>
+        <p style="color: #666; max-width: 600px; margin: 0 auto 3rem; font-size: 1.1rem;">Don't just take our word for it. Here is what our lovely customers have to say about their everyday meals.</p>
+        
+        <div class="testimonials-container">
+            <!-- Review 1 -->
+            <div class="testimonial-card">
+                <div style="color: #f97316; font-size: 1.3rem; margin-bottom: 10px; letter-spacing: 2px;">★★★★★</div>
+                <p>"I moved to Noida for work and missed my mom's cooking terribly. Kajal Ki Rasoi is a lifesaver! The rotis are super soft, and the dal tadka feels like a warm hug after a long day at the office."</p>
+                <div class="testimonial-author">
+                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #fff1e6; color: #f97316; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 1px solid #f97316;">A</div>
+                    <div>
+                        <h4 style="color: #2c3e50; margin: 0; font-size: 1.05rem;">Ankit Sharma</h4>
+                        <span style="color: #888; font-size: 0.85rem;">Sector 62, Noida</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Review 2 -->
+            <div class="testimonial-card">
+                <div style="color: #f97316; font-size: 1.3rem; margin-bottom: 10px; letter-spacing: 2px;">★★★★★</div>
+                <p>"Finally, a tiffin service that doesn't use a thick layer of oil. It's light, fresh, and perfectly spiced. My stomach feels great, and I actually look forward to lunchtime now."</p>
+                <div class="testimonial-author">
+                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #fff1e6; color: #f97316; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 1px solid #f97316;">P</div>
+                    <div>
+                        <h4 style="color: #2c3e50; margin: 0; font-size: 1.05rem;">Priya Verma</h4>
+                        <span style="color: #888; font-size: 0.85rem;">Indirapuram, Ghaziabad</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Review 3 -->
+            <div class="testimonial-card">
+                <div style="color: #f97316; font-size: 1.3rem; margin-bottom: 10px; letter-spacing: 2px;">★★★★★</div>
+                <p>"The 7-day trial won me over instantly. The packaging is neat, delivery is always on time, and the premium paneer sabzi on weekends is just fantastic. Highly recommended for bachelors!"</p>
+                <div class="testimonial-author">
+                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #fff1e6; color: #f97316; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 1px solid #f97316;">R</div>
+                    <div>
+                        <h4 style="color: #2c3e50; margin: 0; font-size: 1.05rem;">Rahul Desai</h4>
+                        <span style="color: #888; font-size: 0.85rem;">Sector 137, Noida</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Review 4 -->
+            <div class="testimonial-card">
+                <div style="color: #f97316; font-size: 1.3rem; margin-bottom: 10px; letter-spacing: 2px;">★★★★★</div>
+                <p>"As a working mother, cooking every single day was exhausting. Their standard thali is my saving grace. It truly tastes like it was cooked in my own kitchen. Pure, clean, and delicious."</p>
+                <div class="testimonial-author">
+                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #fff1e6; color: #f97316; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 1px solid #f97316;">S</div>
+                    <div>
+                        <h4 style="color: #2c3e50; margin: 0; font-size: 1.05rem;">Sneha Gupta</h4>
+                        <span style="color: #888; font-size: 0.85rem;">Vaishali, Ghaziabad</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section id="contact" class="contact-section">
         <h2>We’d Love to Serve You! ❤️</h2>
         <p style="text-align: center; color: #666; margin-bottom: 2.5rem; max-width: 800px; margin-left: auto; margin-right: auto; font-size: 1.1rem;">Craving <em>maa ke haath ka khana</em>? Whether you need a customized daily office tiffin, have special dietary needs, or just want a cozy weekend meal, we are here for you. Drop a message, and we'll reply in minutes!</p>
@@ -98,7 +153,7 @@
             <div class="contact-info" style="background: #fdfbf7; padding: 2rem; border-radius: 10px; border: 1px solid #eee;">
                 <h3 style="color: #2c3e50; margin-bottom: 1.5rem; font-size: 1.4rem;">Get in Touch Directly</h3>
                 <p style="font-size: 1.1rem; margin-bottom: 1rem; line-height: 1.4;">📍 <strong>Kitchen Location:</strong> Sector 130, Noida <br><span style="font-size: 0.9rem; color: #888;">(Delivering hot & fresh across Noida, Ghaziabad & Delhi NCR)</span></p>
-                <p style="font-size: 1.1rem; margin-bottom: 1rem;">📞 <strong>Call/WhatsApp:</strong> <a href="tel:5551234567" style="color: #e67e22; text-decoration: none; font-weight: bold;">(555) 123-4567</a> <span style="font-size: 0.85rem; color: #2ecc71; font-weight: bold;">(Fast Response ⚡)</span></p>
+                <p style="font-size: 1.1rem; margin-bottom: 1rem;">📞 <strong>Call/WhatsApp:</strong> <a href="tel:+917366952957" style="color: #e67e22; text-decoration: none; font-weight: bold;">+91 7366952957</a> <span style="font-size: 0.85rem; color: #2ecc71; font-weight: bold;">(Fast Response ⚡)</span></p>
                 <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">✉️ <strong>Email:</strong> <a href="mailto:info@kajalkitchen.com" style="color: #e67e22; text-decoration: none; font-weight: bold;">info@kajalkitchen.com</a></p>
                 
                 <div style="margin-top: 1.5rem; border-top: 1px dashed #ccc; padding-top: 1.5rem;">
@@ -109,7 +164,7 @@
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem; flex-wrap: wrap;">
-                    <a href="https://wa.me/15551234567" target="_blank" class="btn" style="background-color: #25D366; flex: 1; text-align: center; padding: 12px 10px;">💬 Chat on WhatsApp</a>
+                    <a href="https://wa.me/917366952957" target="_blank" class="btn" style="background-color: #25D366; flex: 1; text-align: center; padding: 12px 10px;">💬 Chat on WhatsApp</a>
                     <a href="#menu" class="btn" style="flex: 1; text-align: center; padding: 12px 10px;">🍲 Order Now</a>
                 </div>
             </div>
@@ -126,8 +181,8 @@
     </section>
 
     <footer>
-        <p>&copy; 2023 Kajal Ki Rasoi. All Rights Reserved.</p>
-        <p>Noida Sector 130 | (555) 123-4567</p>
+        <p>&copy; <span id="current-year">2023</span> Kajal Ki Rasoi. All Rights Reserved.</p>
+        <p>Noida Sector 130 | +91 7366952957</p>
     </footer>
 
     <div id="sticky-cart" class="sticky-cart" style="display: none;"></div>

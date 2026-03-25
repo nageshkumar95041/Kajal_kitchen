@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileMenu = document.getElementById('mobile-menu');
     const navLinks = document.querySelector('.nav-links');
 
+    // Dynamic Footer Copyright Year
+    const currentYearEl = document.getElementById('current-year');
+    if (currentYearEl) {
+        currentYearEl.textContent = new Date().getFullYear();
+    }
+
     if (mobileMenu && navLinks) {
         mobileMenu.addEventListener('click', () => {
             navLinks.classList.toggle('active');
@@ -54,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateCartCount();
     
-    if(document.getElementById('dynamic-menu-container')) {
+    // On the homepage, load all the dynamic menu sections
+    if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html')) {
         loadMenu();
         showStickyCart();
     }
@@ -219,6 +226,50 @@ function showStickyCart() {
     }
 }
 
+let allMenuItems = []; // To store all menu items for filtering
+
+function generateMenuItemHTML(item) {
+    const safeName = escapeHTML(item.name);
+    const itemImage = item.imageUrl && item.imageUrl.trim() !== '' ? escapeHTML(item.imageUrl) : getDefaultImage(safeName);
+    const isBestseller = safeName.includes('Thali') || safeName.includes('Paneer') || safeName.includes('Biryani');
+    const isRecommended = item.category === "🌟 Today's Special";
+    const isVeg = !safeName.toLowerCase().includes('chicken') && !safeName.toLowerCase().includes('egg');
+    const urgency = Math.random() > 0.85 && item.available !== false ? `<span class="urgency-text">🔥 Only a few left!</span>` : '';
+    const isAvailable = item.available !== false;
+    
+    const buttonHtml = isAvailable ? `<button class="btn-order" onclick="orderItem('${safeName.replace(/'/g, "\\'")}', ${item.price})">＋ Add</button>` : `<button class="btn-order" style="background-color: #95a5a6; cursor: not-allowed;" disabled>Sold Out</button>`;
+    
+    let tagHtml = '';
+    if (isRecommended && isAvailable) {
+        tagHtml = '<span class="badge badge-recommended">🔥 Recommended</span>';
+    } else if (isBestseller && isAvailable) {
+        tagHtml = '<span class="badge badge-bestseller">⭐ Best Seller</span>';
+    }
+    
+    return `
+        <div class="menu-card ${!isAvailable ? 'item-unavailable' : ''}">
+            <div class="card-img-container">
+                <img src="${itemImage}" alt="${safeName}" class="card-img" loading="lazy">
+                ${tagHtml}
+                ${isVeg && isAvailable ? '<span class="badge badge-veg">🌱 Veg</span>' : ''}
+                ${!isAvailable ? '<span class="badge badge-sold-out">Sold Out</span>' : ''}
+            </div>
+            <div class="card-content">
+                <div class="card-title-row">
+                    <h3>${safeName}</h3>
+                    ${item.rating ? `<span class="rating-badge">★ ${item.rating.toFixed(1)}</span>` : ''}
+                </div>
+                <p class="card-description">${escapeHTML(item.description || '')}</p>
+                ${urgency}
+                <div class="card-footer">
+                    <span class="price">₹${item.price}</span>
+                    ${buttonHtml}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 async function loadMenu() {
     const container = document.getElementById('dynamic-menu-container');
     if (!container) return;
@@ -232,48 +283,84 @@ async function loadMenu() {
             return;
         }
 
-        const groupedMenu = {};
-        menuItems.forEach(item => {
-            const cat = item.category || "🍲 Main Course";
-            if (!groupedMenu[cat]) groupedMenu[cat] = [];
-            groupedMenu[cat].push(item);
+        allMenuItems = menuItems; // Store for filtering
+        renderFilteredMenu(); // Initial render
+
+        // Add event listeners for filters
+        document.querySelectorAll('input[name="veg-filter"]').forEach(radio => {
+            radio.addEventListener('change', renderFilteredMenu);
         });
+        document.getElementById('price-filter').addEventListener('change', renderFilteredMenu);
+        document.getElementById('popular-filter').addEventListener('change', renderFilteredMenu);
 
-        let html = '';
-        const order = ["🌟 Today's Special", "💰 Budget Meals", "🍱 Value Combos", "🍲 Main Course", "🥖 Breads & Parathas", "🍚 Rice & Biryani", "🥗 Extras & Desserts"];
-        
-        // Include any new categories added by admin dynamically
-        Object.keys(groupedMenu).forEach(cat => {
-            if (!order.includes(cat)) order.push(cat);
-        });
-
-        order.forEach(cat => {
-            if (groupedMenu[cat] && groupedMenu[cat].length > 0) {
-                let titleStyles = 'font-size: 2.2rem; margin: 4rem 0 2rem;';
-                if (cat.includes('Special')) titleStyles = 'color: #e74c3c; font-size: 2.2rem; margin-bottom: 2rem;';
-                else if (cat.includes('Budget')) titleStyles = 'color: #27ae60; font-size: 2.2rem; margin: 4rem 0 2rem;';
-
-                html += `<h2 style="${titleStyles}">${cat}</h2><div class="menu-container">`;
-                groupedMenu[cat].forEach(item => {
-                    const safeName = escapeHTML(item.name);
-                    const itemImage = item.imageUrl && item.imageUrl.trim() !== '' ? escapeHTML(item.imageUrl) : getDefaultImage(safeName);
-                    const isBestseller = safeName.includes('Thali') || safeName.includes('Paneer') || safeName.includes('Biryani');
-                    const isVeg = !safeName.toLowerCase().includes('chicken') && !safeName.toLowerCase().includes('egg');
-                    const urgency = Math.random() > 0.8 ? `<span class="urgency-text">🔥 Only ${Math.floor(Math.random() * 4) + 1} left!</span>` : '';
-                    const isAvailable = item.available !== false;
-                    
-                    const buttonHtml = isAvailable ? `<button class="btn-order" onclick="orderItem('${safeName.replace(/'/g, "\\'")}', ${item.price})">Add</button>` : `<button class="btn-order" style="background-color: #95a5a6; cursor: not-allowed;" disabled>Sold Out</button>`;
-                    
-                    html += `<div class="menu-card" style="${!isAvailable ? 'opacity: 0.7;' : ''}"><div class="card-img" style="background-image: url('${itemImage}');">${isBestseller && isAvailable ? '<span class="badge badge-bestseller">⭐ Bestseller</span>' : ''}${isVeg && isAvailable ? '<span class="badge badge-veg">🌱 Veg</span>' : ''}${!isAvailable ? '<span class="badge" style="background: #e74c3c; left: 10px;">🚫 Out of Stock</span>' : ''}</div><h3>${safeName}</h3><p>${escapeHTML(item.description || '')}</p>${isAvailable ? urgency : ''}<div class="card-footer"><span class="price">₹${item.price}</span>${buttonHtml}</div></div>`;
-                });
-                html += '</div>';
-            }
-        });
-
-        container.innerHTML = html || '<p class="empty-cart">No menu items found.</p>';
     } catch (error) {
         container.innerHTML = '<p class="empty-cart" style="color:red;">Error connecting to the backend server.</p>';
+        console.error("Error loading menu:", error);
     }
+}
+
+function renderFilteredMenu() {
+    const container = document.getElementById('dynamic-menu-container');
+    if (!container) return;
+
+    // Get filter values
+    const vegFilter = document.querySelector('input[name="veg-filter"]:checked').value;
+    const priceFilter = document.getElementById('price-filter').value;
+    const popularFilter = document.getElementById('popular-filter').checked;
+
+    let filteredItems = allMenuItems;
+
+    // Apply veg/non-veg filter
+    if (vegFilter === 'veg') {
+        filteredItems = filteredItems.filter(item => {
+            const safeName = escapeHTML(item.name);
+            return !safeName.toLowerCase().includes('chicken') && !safeName.toLowerCase().includes('egg');
+        });
+    }
+
+    // Apply price filter
+    if (priceFilter !== 'all') {
+        const [min, max] = priceFilter.split('-');
+        filteredItems = filteredItems.filter(item => {
+            if (max) {
+                return item.price >= Number(min) && item.price <= Number(max);
+            } else { // For "250+"
+                return item.price >= Number(min);
+            }
+        });
+    }
+
+    // Apply popular filter
+    if (popularFilter) {
+        filteredItems = filteredItems.filter(item => {
+            const safeName = escapeHTML(item.name);
+            return safeName.includes('Thali') || safeName.includes('Paneer') || safeName.includes('Biryani');
+        });
+    }
+    
+    // Group by category and render
+    const groupedMenu = {};
+    filteredItems.forEach(item => {
+        const cat = item.category || "🍲 Main Course";
+        if (!groupedMenu[cat]) groupedMenu[cat] = [];
+        groupedMenu[cat].push(item);
+    });
+
+    let html = '';
+    const order = ["🌟 Today's Special", "💰 Budget Meals", "🍱 Value Combos", "🍲 Main Course", "🥖 Breads & Parathas", "🍚 Rice & Biryani", "🥗 Extras & Desserts"];
+    
+    Object.keys(groupedMenu).forEach(cat => { if (!order.includes(cat)) order.push(cat); });
+
+    order.forEach(cat => {
+        if (groupedMenu[cat] && groupedMenu[cat].length > 0) {
+            html += `<h2 class="menu-category-title">${cat}</h2>`;
+            html += '<div class="menu-grid">';
+            html += groupedMenu[cat].map(generateMenuItemHTML).join('');
+            html += '</div>';
+        }
+    });
+
+    container.innerHTML = html || '<p class="empty-cart" style="text-align: center; padding: 2rem;">No items match your filters.</p>';
 }
 
 function updateCartCount() {
@@ -838,7 +925,7 @@ function generateActiveOrderHTML(order) {
 
             <div class="order-actions-row">
                 ${order.status === 'Pending' ? `<button class="btn-outline" style="color: #e74c3c; border-color: #e74c3c;" onclick="cancelOrder('${safeId}')">Cancel Order</button>` : ''}
-                <button class="btn-outline" onclick="showCustomAlert('Please call us at: (555) 123-4567')">📞 Call Support</button>
+                <button class="btn-outline" onclick="showCustomAlert('Please call us at: +91 7366952957')">📞 Call Support</button>
                 ${order.status === 'Out for Delivery' ? `<button class="btn" style="padding: 8px 20px;" onclick="trackDelivery('${safeId}')">📍 Track Map</button>` : ''}
             </div>
         </div>
