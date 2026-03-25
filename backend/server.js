@@ -24,6 +24,7 @@ app.use(helmet({
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://js.stripe.com", "https://cdn.socket.io", "https://unpkg.com"],
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://unpkg.com"],
             imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://*.tile.openstreetmap.org", "https://via.placeholder.com"],
             connectSrc: ["'self'", "ws:", "wss:", "https://accounts.google.com", "https://api.stripe.com", "https://nominatim.openstreetmap.org"],
