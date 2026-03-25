@@ -1574,8 +1574,8 @@ async function processCheckout(event, savedContactStr) {
     }
     
     // Seamlessly save this successful address so it auto-fills next time they checkout
-    if (customerContact) {
-        localStorage.setItem(`savedDeliveryAddress_${customerContact}`, JSON.stringify({ flat, area, landmark, city, pincode }));
+    if (savedContactStr) {
+        localStorage.setItem(`savedDeliveryAddress_${savedContactStr}`, JSON.stringify({ flat, area, landmark, city, pincode }));
     }
     
     let deliveryAddress = `${flat}, ${area}`;
@@ -1598,7 +1598,7 @@ async function processCheckout(event, savedContactStr) {
     const payload = { 
         items: cart, 
         customerName: customerName, 
-        contact: guestContact,
+        contact: guestContact || savedContactStr,
         address: deliveryAddress,
         couponCode: appliedCoupon,
         successUrl: successUrl,
@@ -2243,9 +2243,12 @@ async function submitSubscription(e, plan, frequency, price, persons, couponCode
         } catch (err) { showCustomAlert('Network error connecting to server.'); }
     } else {
         if (typeof Stripe === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://js.stripe.com/v3/';
-            document.head.appendChild(script);
+            await new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = 'https://js.stripe.com/v3/';
+                script.onload = resolve;
+                document.head.appendChild(script);
+            });
         }
         try {
             let configRes = await fetch(`${API_BASE_URL}/api/config/stripe`);
