@@ -16,8 +16,8 @@ require('dotenv').config();
 
 const app = express();
 
-// Trust the first proxy (Required for rate limiting behind hosts like Render, Railway, or Vercel)
-app.set('trust proxy', 1);
+// Trust up to 3 proxy hops (Handles Cloudflare + Render proxy chaining)
+app.set('trust proxy', 3);
 
 app.use(helmet()); // Sets robust HTTP security headers (Clickjacking, XSS protection, etc.)
 
@@ -37,14 +37,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Global API Rate Limiter (Protects against generic DDoS / Spam)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200, // Limit each IP to 200 requests per `window`
+    max: 1000, // Increased limit for testing
+    validate: { trustProxy: false }, // Prevent proxy validation crashes
     message: { success: false, message: 'Too many requests, please try again later.' }
 });
 
 // Strict Auth Rate Limiter (Protects against Brute Force Login/Signup)
 const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 Hour
-    max: 15, // Limit each IP to 15 login/register requests per hour
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Increased limit for testing
+    validate: { trustProxy: false }, // Prevent proxy validation crashes
     message: { success: false, message: 'Too many authentication attempts, please try again later.' }
 });
 

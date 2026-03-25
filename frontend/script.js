@@ -1671,7 +1671,8 @@ async function handleRegistration(event) {
             showCustomAlert(data.message || 'Registration failed.');
         }
     } catch (error) {
-        showCustomAlert('Server error. Ensure the backend is running on port 3000.');
+        console.error('Registration Error:', error);
+        showCustomAlert('Network Error: Could not connect to the server.');
     }
 }
 
@@ -1703,7 +1704,8 @@ async function handleLogin(event) {
             showCustomAlert(data.message || 'Invalid credentials.');
         }
     } catch (error) {
-        showCustomAlert('Server error. Ensure the backend is running on port 3000.');
+        console.error('Login Error:', error);
+        showCustomAlert('Network Error: Could not connect to the server.');
     }
 }
 
