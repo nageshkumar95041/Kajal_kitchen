@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Checkout | Kajal Kitchen</title>
+    <title>Secure Checkout | Kajal Ki Rasoi</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
     <nav id="navbar" class="scrolled">
-        <div class="logo">Kajal Kitchen</div>
+        <div class="logo"><a href="index.html" style="color: inherit; text-decoration: none;">Kajal Ki Rasoi</a></div>
         <ul class="nav-links">
             <li><a href="index.html#home">Home</a></li>
             <li><a href="index.html#menu">Menu</a></li>
@@ -26,19 +26,49 @@
 
     <section class="payment-page">
         <div class="payment-container">
-            <h2>Secure Payment</h2>
-            <!-- This form will be handled by Stripe.js -->
+            <h2>Checkout Details</h2>
+            <div id="checkout-summary" style="margin-bottom: 1.5rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; text-align: center; color: #2c3e50; line-height: 1.4;">
+                <!-- Summary dynamically injected here -->
+            </div>
             <form id="payment-form" class="payment-form">
-                <input type="text" id="card-name" placeholder="Billing Name" required>
-                <div id="payment-element" style="border: 1px solid #ccc; padding: 12px; border-radius: 5px; margin-top: 0.5rem;"></div>
-                <button id="submit-payment-btn" class="btn" style="width: 100%; margin-top: 1rem;">Pay Now</button>
+                <input type="text" id="card-name" placeholder="Full Name" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                
+                <h3 style="font-size: 1.1rem; color: #2c3e50; margin-top: 1rem;">Contact Info (Required for Guest)</h3>
+                <input type="text" id="guest-contact" placeholder="Email or Phone Number" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                    <h3 style="font-size: 1.1rem; color: #2c3e50;">Delivery Address</h3>
+                    <button type="button" id="locate-btn" style="background: #e67e22; color: #fff; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background 0.3s;">📍 Map Locator</button>
+                </div>
+                <input type="text" id="address-flat" placeholder="Flat, House no., Building, Apartment" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                <input type="text" id="address-area" placeholder="Area, Street, Sector, Village" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                <input type="text" id="address-landmark" placeholder="Nearby Landmark (Optional)" style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                <div class="form-row">
+                    <input type="text" id="address-city" placeholder="Town/City" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                    <input type="text" id="address-pincode" placeholder="Pincode" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                </div>
+                
+                <h3 style="font-size: 1.1rem; color: #2c3e50; margin-top: 1rem;">Have a Coupon?</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="coupon-code" placeholder="e.g. APNA50" style="padding: 10px; flex: 1; border: 1px solid #ccc; border-radius: 5px;">
+                    <button type="button" class="btn" style="padding: 10px;" onclick="applyCoupon()">Apply</button>
+                </div>
+                <div id="coupon-msg" style="font-size: 0.85rem; margin-top: 5px;"></div>
+
+                <h3 style="font-size: 1.1rem; color: #2c3e50; margin-top: 1rem;">Payment Method</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                    <label style="cursor: pointer;"><input type="radio" name="pay_method" value="online" checked> Pay Online (Cards via Stripe)</label>
+                    <label style="cursor: pointer;"><input type="radio" name="pay_method" value="cod"> Cash on Delivery (COD)</label>
+                </div>
+
+                <button id="submit-payment-btn" class="btn" style="width: 100%; margin-top: 1rem; padding: 15px; font-size: 1.1rem; border-radius: 8px;">Proceed to Payment</button>
                 <div id="payment-message" style="color: red; text-align: center; margin-top: 1rem;"></div>
             </form>
         </div>
     </section>
 
     <footer>
-        <p>&copy; 2023 Kajal Kitchen. All Rights Reserved.</p>
+        <p>&copy; 2023 Kajal Ki Rasoi. All Rights Reserved.</p>
     </footer>
     <script src="script.js"></script>
 </body>

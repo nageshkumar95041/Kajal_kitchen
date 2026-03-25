@@ -3,39 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile | Kajal Kitchen</title>
+    <title>My Profile | Kajal Ki Rasoi</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body style="background-color: #f4f6f8;">
     <nav id="navbar" class="scrolled">
-        <div class="logo">Kajal Kitchen</div>
+        <div class="logo"><a href="index.html" style="color: #333; text-decoration: none;">Kajal Ki Rasoi</a></div>
+        <div class="menu-toggle" id="mobile-menu" style="color: #333;">☰</div>
         <ul class="nav-links">
-            <li><a href="index.html#home">Home</a></li>
-            <li><a href="index.html#menu">Menu</a></li>
-            <li><a href="index.html#about">About</a></li>
-            <li><a href="index.html#contact">Contact</a></li>
-            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
-            <li><a href="login.html">Login</a></li>
-            <li><a href="register.html">Sign Up</a></li>
+            <li><a href="index.html" style="color: #333;">Home</a></li>
+            <li><a href="cart.html" class="nav-cart-icon" style="color: #333;">🛒 Cart <span id="cart-count" class="badge badge-bestseller" style="position: relative; top: -10px; left: -5px;">0</span></a></li>
         </ul>
     </nav>
 
-    <section class="auth-page">
-        <div class="auth-container">
-            <h2>My Profile</h2>
-            <form class="auth-form" onsubmit="handleProfileUpdate(event)">
-                <input type="text" id="profile-name" placeholder="Full Name" required>
-                <input type="text" id="profile-contact" placeholder="Email or Phone Number" required>
-                <p style="font-size: 0.85rem; color: #666; text-align: left; margin: 0;">Leave password blank to keep your current one.</p>
-                <input type="password" id="profile-password" placeholder="New Password" minlength="6">
-                <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Update Profile</button>
-            </form>
+    <section class="profile-page">
+        <!-- Header & User Info -->
+        <div class="profile-header-card">
+            <div class="profile-info-row">
+                <div class="profile-avatar" id="profile-initials">?</div>
+                <div class="profile-details">
+                    <h2 id="display-profile-name">Loading...</h2>
+                    <p id="display-profile-contact">Loading...</p>
+                    <p class="profile-loyalty-text">⭐ VIP Member</p>
+                </div>
+                <button class="btn-edit-profile" onclick="showEditProfileModal()">Edit</button>
+            </div>
         </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions-container">
+            <button class="quick-action-btn primary" onclick="repeatLastOrder()">
+                <span class="icon">🔁</span>
+                <div class="text-left">
+                    <p class="qa-title">Repeat Last Order</p>
+                    <p class="qa-subtitle" id="last-order-name">Loading...</p>
+                </div>
+            </button>
+            <button class="quick-action-btn secondary">
+                <span class="icon" style="color: #9b59b6;">🪙</span>
+                <div class="text-left">
+                    <p class="qa-title">Loyalty Coins</p>
+                    <p class="qa-subtitle" style="color: #333;">450 Coins</p>
+                </div>
+            </button>
+        </div>
+
+        <!-- Main Navigation Menu -->
+        <div class="profile-menu-list">
+            <a href="my-orders.html" class="profile-menu-item">
+                <div class="menu-item-left"><span class="menu-icon">📦</span><div><h4>My Orders</h4><p>View past & active orders</p></div></div><span class="chevron">›</span>
+            </a>
+            <a href="#" class="profile-menu-item" onclick="showCustomAlert('Address book coming soon!')">
+                <div class="menu-item-left"><span class="menu-icon">📍</span><div><h4>Manage Addresses</h4><p>Home, Work, Other</p></div></div><span class="chevron">›</span>
+            </a>
+            <a href="#" class="profile-menu-item" onclick="showCustomAlert('Wallet management coming soon!')">
+                <div class="menu-item-left"><span class="menu-icon">💳</span><div><h4>Payment Methods</h4><p>Saved Cards & UPI</p></div></div><span class="chevron">›</span>
+            </a>
+            <a href="#" class="profile-menu-item" onclick="showCustomAlert('Discounts are applied automatically at checkout!')">
+                <div class="menu-item-left"><span class="menu-icon">🎟️</span><div><h4>Offers & Coupons</h4><p>Available discounts</p></div></div><span class="chevron">›</span>
+            </a>
+            
+            <h3 class="profile-section-title">Settings & Support</h3>
+            
+            <a href="#" class="profile-menu-item" onclick="showCustomAlert('Notifications settings coming soon!')">
+                <div class="menu-item-left"><span class="menu-icon">🔔</span><div><h4>Notifications</h4><p>SMS, WhatsApp & Promos</p></div></div><span class="chevron">›</span>
+            </a>
+            <a href="#" class="profile-menu-item" onclick="showCustomAlert('Our support team will contact you shortly.')">
+                <div class="menu-item-left"><span class="menu-icon">🎧</span><div><h4>Help & Support</h4><p>FAQs & Order Issues</p></div></div><span class="chevron">›</span>
+            </a>
+        </div>
+
+        <div class="profile-logout-container"><button class="btn-logout" onclick="handleLogout()">🔴 Secure Logout</button></div>
     </section>
 
-    <footer>
-        <p>&copy; 2023 Kajal Kitchen. All Rights Reserved.</p>
-    </footer>
     <script src="script.js"></script>
 </body>
 </html>

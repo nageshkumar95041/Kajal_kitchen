@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders | Kajal Kitchen</title>
+    <title>My Orders | Kajal Ki Rasoi</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <nav id="navbar" class="scrolled">
-        <div class="logo">Kajal Kitchen</div>
+        <div class="logo"><a href="index.html" style="color: inherit; text-decoration: none;">Kajal Ki Rasoi</a></div>
         <ul class="nav-links">
             <li><a href="index.html#home">Home</a></li>
             <li><a href="index.html#menu">Menu</a></li>
@@ -21,14 +21,24 @@
         </ul>
     </nav>
 
-    <section class="admin-page">
-        <h2>My Orders</h2>
-        <p style="text-align: center; color: #666; margin-bottom: 2rem;">Track your past and current orders.</p>
-        <div id="my-orders-container" class="admin-grid" style="max-width: 1200px; margin: 0 auto;"></div>
+    <section class="admin-page my-orders-page" style="padding-top: 6rem;">
+        <div id="active-order-container"></div>
+        
+        <div class="past-orders-section">
+            <div class="order-header" style="margin-top: 2rem; border-bottom: none;">
+                <h2>Past Orders</h2>
+                <select id="past-status-filter" onchange="loadMyOrders()" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                    <option value="all">All Orders</option>
+                    <option value="Completed">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div id="my-orders-container"></div>
+        </div>
     </section>
 
     <footer>
-        <p>&copy; 2023 Kajal Kitchen. All Rights Reserved.</p>
+        <p>&copy; 2023 Kajal Ki Rasoi. All Rights Reserved.</p>
     </footer>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

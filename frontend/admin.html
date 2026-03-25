@@ -3,26 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owner Dashboard | Kajal Kitchen</title>
+    <title>Owner Dashboard | Kajal Ki Rasoi</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <nav id="navbar" class="scrolled">
-        <div class="logo" style="color: #333;">Kajal Kitchen Admin</div>
-        <ul class="nav-links">
-            <li><a href="index.html" style="color: #333;">Back to Site</a></li>
-        </ul>
-    </nav>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="sidebar-logo">Kajal Ki Rasoi<br><span>Admin Portal</span></div>
+            <ul class="sidebar-nav">
+                <li><a href="#" onclick="switchAdminTab('tab-dashboard')" id="nav-dashboard" class="active">📊 Dashboard</a></li>
+                <li><a href="#" onclick="switchAdminTab('tab-orders')" id="nav-orders">📦 Live Orders</a></li>
+                <li><a href="#" onclick="switchAdminTab('tab-subscriptions')" id="nav-subscriptions">📅 Subscriptions</a></li>
+                <li><a href="#" onclick="switchAdminTab('tab-menu')" id="nav-menu">🍔 Menu Management</a></li>
+                <li><a href="#" onclick="switchAdminTab('tab-customers')" id="nav-customers">👥 Customers</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <button onclick="toggleTheme()" class="theme-toggle">🌓 Toggle Theme</button>
+                <a href="index.html" class="back-link">⬅ Back to Site</a>
+            </div>
+        </aside>
 
-    <section class="admin-page">
-        <h2>Live Order Dashboard</h2>
-        <p>Manage incoming customer orders here.</p>
-        <div id="admin-orders-container" class="admin-grid"></div>
-    </section>
+        <main class="admin-main">
+            <header class="admin-mobile-header">
+                <button class="menu-btn" onclick="toggleSidebar()">☰ Menu</button>
+                <span>Admin Portal</span>
+            </header>
 
-    <footer>
-        <p>&copy; 2023 Kajal Kitchen. Admin Portal.</p>
-    </footer>
+            <div id="tab-dashboard" class="admin-tab-content active">
+                <h2>Dashboard Overview</h2>
+                <div id="admin-dashboard-stats" class="dashboard-stats-container"><p>Loading stats...</p></div>
+            </div>
+
+            <div id="tab-orders" class="admin-tab-content">
+                <h2>Live Order Feed</h2>
+                <p style="color: var(--admin-text-muted);">New orders appear automatically with a sound alert.</p>
+                <div class="admin-filters">
+                    <select id="status-filter" onchange="loadAdminOrders()"><option value="">All Live Orders</option><option value="all">All Statuses</option><option value="Pending">Pending</option><option value="Preparing">Preparing</option><option value="Out for Delivery">Out for Delivery</option><option value="Completed">Completed</option><option value="Rejected">Rejected</option></select>
+                    <select id="payment-filter" onchange="loadAdminOrders()"><option value="">All Payments</option><option value="Online">Online</option><option value="COD">COD</option></select>
+                    <input type="date" id="date-filter" onchange="loadAdminOrders()">
+                    <button class="btn" style="padding: 10px 15px;" onclick="document.getElementById('status-filter').value=''; document.getElementById('payment-filter').value=''; document.getElementById('date-filter').value=''; loadAdminOrders();">Clear</button>
+                </div>
+                <div id="admin-orders-container" class="admin-grid"></div>
+            </div>
+
+            <div id="tab-subscriptions" class="admin-tab-content">
+                <h2>Manage Subscriptions</h2>
+                <p style="color: var(--admin-text-muted);">View and process new tiffin subscription requests.</p>
+                <div class="admin-filters">
+                    <select id="sub-status-filter" onchange="loadAdminSubscriptions()">
+                        <option value="">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Active">Active</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div id="admin-subscriptions-container" class="admin-grid"></div>
+            </div>
+
+            <div id="tab-menu" class="admin-tab-content">
+                <h2>Menu Management</h2>
+                <p style="color: var(--admin-text-muted);">Manage your restaurant's offerings.</p>
+                <div id="admin-menu-container" style="margin-top: 2rem;"></div>
+            </div>
+
+            <div id="tab-customers" class="admin-tab-content">
+                <h2>Customer Insights</h2>
+                <p style="color: var(--admin-text-muted);">Track repeat customers and order history.</p>
+                <div id="admin-customers-container" style="margin-top: 2rem;"></div>
+            </div>
+        </main>
+    </div>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>

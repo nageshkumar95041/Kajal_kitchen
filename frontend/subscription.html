@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiffin Subscription | Kajal Ki Rasoi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="background-color: #f4f6f8;">
+    <nav id="navbar">
+        <div class="logo"><a href="index.html" style="color: inherit; text-decoration: none;">Kajal Ki Rasoi</a></div>
+        <ul class="nav-links">
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#menu">Menu</a></li>
+            <li><a href="subscription.html" style="color: #e67e22;">Tiffin</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+            <li><a href="login.html">Login</a></li>
+        </ul>
+        <div class="nav-right">
+            <a href="cart.html" class="nav-cart-icon">Cart (<span id="cart-count">0</span>)</a>
+            <div class="menu-toggle" id="mobile-menu">&#9776;</div>
+        </div>
+    </nav>
+
+    <header class="hero" style="background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=1950&q=80') center/cover;">
+        <div class="hero-content">
+            <h1><em>Ghar Jaisa Khana</em>, Roz Roz! ❤️</h1>
+            <p>Missing <em>maa ke haath ka khana</em>? Skip the greasy restaurant menus. Get fresh, healthy, and 100% homemade meals delivered to your desk or doorstep every single day.</p>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
+                <a href="#pricing" class="btn">Start Monthly Tiffin</a>
+                <a href="https://wa.me/15551234567" target="_blank" class="btn" style="background-color: #25D366;">💬 Chat on WhatsApp</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="features-section" style="background: #fff;">
+        <h2 style="font-size: 2.2rem; color: #2c3e50; margin-bottom: 3rem;">Why NCR Loves Our Daily Tiffin</h2>
+        <div class="features-container">
+            <div class="feature-box">
+                <div class="feature-icon">🌿</div>
+                <h3>Freshly Cooked Daily</h3>
+                <p>We chop, prep, and cook every morning. No freezing, no stale leftovers.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">🚫</div>
+                <h3>Zero Preservatives</h3>
+                <p>Pure, grounded spices with no artificial colors or hidden chemicals.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">🥗</div>
+                <h3>Balanced Nutrition</h3>
+                <p>The perfect ratio of protein, carbs, and greens to keep you energized.</p>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">🏠</div>
+                <h3>Home-Style Taste</h3>
+                <p>Light on the stomach, cooked with a mother’s touch and strict hygiene.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="menu-section">
+        <h2>Plans & Pricing</h2>
+        <p style="color: #666; max-width: 600px; margin: 0 auto;">Flexible weekly and monthly subscriptions designed for your appetite. (100% Pure Veg & Customizable)</p>
+        
+        <div style="max-width: 900px; margin: 2rem auto; background: linear-gradient(135deg, #fff3e0, #ffe0b2); border-radius: 15px; padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #ffcc80;">
+            <div style="text-align: left; flex: 1; min-width: 280px;">
+                <span style="background: #e74c3c; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.8rem; display: inline-block;">New Customers ✨</span>
+                <h3 style="color: #d35400; font-size: 1.8rem; margin-bottom: 0.5rem;">7-Day Trial Week</h3>
+                <p style="color: #555; margin-bottom: 0; font-size: 1.05rem;">Not sure yet? Taste our <strong>Standard Thali</strong> for a full week at a special introductory price. Taste the difference before committing to a monthly plan!</p>
+            </div>
+            <div style="text-align: center; background: #fff; padding: 1.5rem; border-radius: 10px; min-width: 200px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                <div id="trial-price" style="font-size: 2.2rem; font-weight: bold; color: #e67e22; margin-bottom: 0.2rem;">₹699</div>
+                <div id="trial-strike" style="font-size: 0.9rem; color: #888; text-decoration: line-through; margin-bottom: 1rem;">Regular Price: ₹840</div>
+                <button id="trial-link" onclick="openSubscriptionModal('7-Day Trial Week', 7, 699, 1)" class="btn" style="width: 100%;">Claim Trial Offer</button>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 2rem; margin-top: 1rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+            <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+                <div>
+                    <p style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">Delivery Frequency</p>
+                    <div style="display: inline-flex; background: #fff; padding: 5px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee;">
+                        <button id="btn-5days" onclick="toggleFrequency(5)" style="background: transparent; color: #555; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; transition: all 0.3s; font-size: 0.95rem;">5 Days (Mon-Fri)</button>
+                        <button id="btn-7days" onclick="toggleFrequency(7)" style="background: #e67e22; color: #fff; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; transition: all 0.3s; font-size: 0.95rem;">7 Days (Mon-Sun)</button>
+                    </div>
+                </div>
+                <div>
+                    <p style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">Number of People</p>
+                    <div style="display: inline-flex; align-items: center; background: #fff; padding: 5px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee;">
+                        <button onclick="changePersons(-1)" style="background: #f1f2f6; color: #333; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1.2rem; display: flex; justify-content: center; align-items: center;">-</button>
+                        <span id="persons-count" style="margin: 0 15px; font-weight: bold; font-size: 1.1rem; color: #2c3e50; min-width: 20px; text-align: center;">1</span>
+                        <button onclick="changePersons(1)" style="background: #e67e22; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1.2rem; display: flex; justify-content: center; align-items: center;">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pricing-container">
+            <div class="pricing-card">
+                <h3>Basic Thali</h3>
+                <p style="color: #888; font-size: 0.9rem; margin-bottom: 1rem; min-height: 40px;">Perfect for a light, everyday lunch.</p>
+                <span class="price" style="margin-bottom: 0.2rem;"><span id="basic-monthly">₹3,200</span> <span style="font-size: 1rem; color: #888; font-weight: normal;">/ month</span></span>
+                <p style="font-size: 0.95rem; font-weight: bold; color: #27ae60; margin-bottom: 1rem;"><span id="basic-per-meal">₹120</span> / meal <span id="basic-strike" style="font-size: 0.8rem; font-weight: normal; color: #888; text-decoration: line-through; margin-left: 5px;">₹3,600</span></p>
+                <ul>
+                    <li>✅ 4 Soft Rotis</li>
+                    <li>✅ Fresh Seasonal Sabzi</li>
+                    <li>✅ Yellow Dal Tadka</li>
+                    <li>✅ Fresh Green Salad</li>
+                </ul>
+                <button id="basic-link" onclick="openSubscriptionModal('Basic Thali', 7, 3200, 1)" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Select Basic Plan</button>
+            </div>
+
+            <div class="pricing-card popular">
+                <div class="badge-popular">Most Popular ⭐</div>
+                <h3>Standard Thali</h3>
+                <p style="color: #888; font-size: 0.9rem; margin-bottom: 1rem; min-height: 40px;">The classic, balanced Indian meal.</p>
+                <span class="price" style="margin-bottom: 0.2rem;"><span id="standard-monthly">₹4,200</span> <span style="font-size: 1rem; color: #888; font-weight: normal;">/ month</span></span>
+                <p style="font-size: 0.95rem; font-weight: bold; color: #27ae60; margin-bottom: 1rem;"><span id="standard-per-meal">₹160</span> / meal <span id="standard-strike" style="font-size: 0.8rem; font-weight: normal; color: #888; text-decoration: line-through; margin-left: 5px;">₹4,800</span></p>
+                <ul>
+                    <li>✅ 3 Rotis & Plain Rice</li>
+                    <li>✅ Premium Dry Sabzi</li>
+                    <li>✅ Dal Makhani / Dal Tadka</li>
+                    <li>✅ Salad & Homemade Pickle</li>
+                </ul>
+                <button id="standard-link" onclick="openSubscriptionModal('Standard Thali', 7, 4200, 1)" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Select Standard Plan</button>
+            </div>
+
+            <div class="pricing-card">
+                <h3>Premium Thali</h3>
+                <p style="color: #888; font-size: 0.9rem; margin-bottom: 1rem; min-height: 40px;">For those who love a little extra.</p>
+                <span class="price" style="margin-bottom: 0.2rem;"><span id="premium-monthly">₹5,800</span> <span style="font-size: 1rem; color: #888; font-weight: normal;">/ month</span></span>
+                <p style="font-size: 0.95rem; font-weight: bold; color: #27ae60; margin-bottom: 1rem;"><span id="premium-per-meal">₹220</span> / meal <span id="premium-strike" style="font-size: 0.8rem; font-weight: normal; color: #888; text-decoration: line-through; margin-left: 5px;">₹6,600</span></p>
+                <ul>
+                    <li>✅ 3 Butter Rotis & Jeera Rice</li>
+                    <li>✅ Special Paneer Sabzi</li>
+                    <li>✅ Rich Dal</li>
+                    <li>✅ Boondi Raita, Salad & Sweet</li>
+                </ul>
+                <button id="premium-link" onclick="openSubscriptionModal('Premium Thali', 7, 5800, 1)" class="btn" style="width: 100%; text-align: center; border: none; cursor: pointer;">Select Premium Plan</button>
+            </div>
+        </div>
+        <p style="margin-top: 2rem; color: #27ae60; font-weight: bold;">💡 Pro Tip: Subscribe for a month and get up to 15% OFF your daily meal cost!</p>
+    </section>
+
+    <section class="about-section" style="background: #fff;">
+        <div style="display: flex; flex-wrap: wrap; gap: 3rem; max-width: 1000px; margin: 0 auto; text-align: left;">
+            <div style="flex: 1; min-width: 300px;">
+                <h3 style="color: #e67e22; font-size: 1.8rem; margin-bottom: 1rem;">👩‍🍳 Made Just the Way You Like It</h3>
+                <p style="color: #555; margin-bottom: 1rem;">We aren't a rigid commercial kitchen. Tell us what you need!</p>
+                <ul style="list-style: none; padding: 0; line-height: 1.8; color: #444;">
+                    <li>🧂 <strong>Less Oil & Spice:</strong> Prefer mild food? We’ll cook it perfectly for your gut.</li>
+                    <li>🥦 <strong>Dietary Needs:</strong> Jain food or specific vegetable allergies? Just let us know.</li>
+                    <li>➕ <strong>Easy Add-ons:</strong> Need an extra roti, a bowl of curd, or double paneer? Customize effortlessly.</li>
+                </ul>
+            </div>
+            <div style="flex: 1; min-width: 300px; background: #fdfbf7; padding: 2rem; border-radius: 10px; border-left: 5px solid #2ecc71;">
+                <h3 style="color: #2c3e50; font-size: 1.5rem; margin-bottom: 1rem;">🚚 Delivery Details</h3>
+                <ul style="list-style: none; padding: 0; line-height: 1.8; color: #444;">
+                    <li>📍 <strong>Areas Covered:</strong> Noida, Ghaziabad, and Delhi NCR.</li>
+                    <li>☀️ <strong>Lunch Slot:</strong> 12:30 PM – 2:00 PM <em>(Perfect for office desks)</em></li>
+                    <li>🌙 <strong>Dinner Slot:</strong> 7:30 PM – 9:00 PM <em>(Relax at home)</em></li>
+                    <li>🚚 <strong>Reliability:</strong> Weather rain or shine, your everyday meal will reach you.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="menu-section" style="background: #f4f6f8;">
+        <h2>Got Questions? We’ve Got Answers!</h2>
+        <div class="faq-container">
+            <div class="faq-item">
+                <h4>Can I pause my subscription if I travel?</h4>
+                <p>Absolutely! Just drop us a WhatsApp message a day in advance, and we will pause your tiffin and carry forward your balance. No money lost!</p>
+            </div>
+            <div class="faq-item">
+                <h4>Can I customize the food?</h4>
+                <p>Yes, you can request less oil, mild spices, or extra items like rice and rotis when setting up your plan.</p>
+            </div>
+            <div class="faq-item">
+                <h4>What if I don't like a specific vegetable?</h4>
+                <p>Let us know your dislikes beforehand, and we will happily swap it out with an alternative sabzi or extra dal.</p>
+            </div>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+    <script>
+        let currentDays = 7;
+        let currentPersons = 1;
+
+        function toggleFrequency(days) {
+            currentDays = days;
+            document.getElementById('btn-5days').style.background = days === 5 ? '#e67e22' : 'transparent';
+            document.getElementById('btn-5days').style.color = days === 5 ? '#fff' : '#555';
+            document.getElementById('btn-7days').style.background = days === 7 ? '#e67e22' : 'transparent';
+            document.getElementById('btn-7days').style.color = days === 7 ? '#fff' : '#555';
+            updatePricing();
+        }
+
+        function changePersons(delta) {
+            if (currentPersons + delta >= 1) {
+                currentPersons += delta;
+                document.getElementById('persons-count').innerText = currentPersons;
+                updatePricing();
+            }
+        }
+
+        function updatePricing() {
+            const basicBase = currentDays === 5 ? 2399 : 3200;
+            const basicStrike = currentDays === 5 ? 2640 : 3600;
+            const stdBase = currentDays === 5 ? 3199 : 4200;
+            const stdStrike = currentDays === 5 ? 3520 : 4800;
+            const premBase = currentDays === 5 ? 4399 : 5800;
+            const premStrike = currentDays === 5 ? 4840 : 6600;
+            const trialBase = 699;
+            const trialStrike = 840;
+
+            document.getElementById('trial-price').innerText = '₹' + (trialBase * currentPersons).toLocaleString('en-IN');
+            document.getElementById('trial-strike').innerText = 'Regular Price: ₹' + (trialStrike * currentPersons).toLocaleString('en-IN');
+            document.getElementById('trial-link').setAttribute('onclick', `openSubscriptionModal('7-Day Trial Week', 7, ${trialBase * currentPersons}, ${currentPersons})`);
+
+            document.getElementById('basic-monthly').innerText = '₹' + (basicBase * currentPersons).toLocaleString('en-IN');
+            document.getElementById('basic-strike').innerText = '₹' + (basicStrike * currentPersons).toLocaleString('en-IN');
+            document.getElementById('basic-per-meal').innerText = '₹' + (120 * currentPersons).toLocaleString('en-IN');
+            document.getElementById('basic-link').setAttribute('onclick', `openSubscriptionModal('Basic Thali', ${currentDays}, ${basicBase * currentPersons}, ${currentPersons})`);
+
+            document.getElementById('standard-monthly').innerText = '₹' + (stdBase * currentPersons).toLocaleString('en-IN');
+            document.getElementById('standard-strike').innerText = '₹' + (stdStrike * currentPersons).toLocaleString('en-IN');
+            document.getElementById('standard-per-meal').innerText = '₹' + (160 * currentPersons).toLocaleString('en-IN');
+            document.getElementById('standard-link').setAttribute('onclick', `openSubscriptionModal('Standard Thali', ${currentDays}, ${stdBase * currentPersons}, ${currentPersons})`);
+
+            document.getElementById('premium-monthly').innerText = '₹' + (premBase * currentPersons).toLocaleString('en-IN');
+            document.getElementById('premium-strike').innerText = '₹' + (premStrike * currentPersons).toLocaleString('en-IN');
+            document.getElementById('premium-per-meal').innerText = '₹' + (220 * currentPersons).toLocaleString('en-IN');
+            document.getElementById('premium-link').setAttribute('onclick', `openSubscriptionModal('Premium Thali', ${currentDays}, ${premBase * currentPersons}, ${currentPersons})`);
+        }
+    </script>
+</body>
+</html>
