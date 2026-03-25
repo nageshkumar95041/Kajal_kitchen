@@ -31,7 +31,8 @@ app.use(helmet({
             frameSrc: ["'self'", "https://accounts.google.com", "https://js.stripe.com", "https://hooks.stripe.com"],
         },
     },
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
 })); // Sets robust HTTP security headers while allowing necessary external resources
 
 app.post('/webhook', express.raw({type: 'application/json'}), handleStripeWebhook);
