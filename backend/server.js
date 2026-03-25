@@ -16,7 +16,7 @@ require('dotenv').config();
 
 const app = express();
 
-// Trust the first proxy (required for rate limiting behind a reverse proxy like Render)
+// Trust the first proxy (Required for rate limiting behind hosts like Render, Railway, or Vercel)
 app.set('trust proxy', 1);
 
 app.use(helmet()); // Sets robust HTTP security headers (Clickjacking, XSS protection, etc.)

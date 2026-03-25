@@ -1,5 +1,8 @@
+// If you hosted frontend and backend SEPARATELY (e.g., Vercel + Render), put your backend URL here:
+const PRODUCTION_BACKEND_URL = ''; // e.g. 'https://your-backend-api.onrender.com'
+
 // Automatically adapt to production domain, or use localhost:3000 for local dev
-const API_BASE_URL = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin;
+const API_BASE_URL = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? 'http://localhost:3000' : (PRODUCTION_BACKEND_URL || window.location.origin);
 
 function escapeHTML(str) {
     if (str === null || str === undefined) return '';
