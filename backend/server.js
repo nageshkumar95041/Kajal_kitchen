@@ -101,7 +101,8 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     contact: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true }, // In a real app, hash this with bcrypt!
-    role: { type: String, default: 'user' }
+    role: { type: String, default: 'user' },
+    isTrusted: { type: Boolean, default: false }
 }, { toJSON: { virtuals: true } });
 const User = mongoose.model('User', userSchema);
 
@@ -550,6 +551,16 @@ app.post('/api/checkout-cod', optionalAuth, async (req, res) => {
     const { items, customerName, contact, address, couponCode } = req.body;
     if (!Array.isArray(items) || !address || !customerName) return res.status(400).json({ error: 'Missing details' });
 
+    if (!req.user) {
+        return res.status(403).json({ error: 'You must be logged in to use Cash on Delivery.' });
+    }
+
+    const user = await User.findById(req.user.id);
+    const completedOrdersCount = await Order.countDocuments({ userId: req.user.id, status: 'Completed' });
+    if (!user || (!user.isTrusted && completedOrdersCount === 0)) {
+        return res.status(403).json({ error: 'Cash on Delivery is only available for trusted users with at least 1 completed order.' });
+    }
+
     const itemNames = items.map(i => String(i.name));
     const dbItems = await MenuItem.find({ name: { $in: itemNames } });
     const priceMap = {};
@@ -847,7 +858,11 @@ app.get('/api/profile', authenticateUser, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-        res.json({ success: true, user: { name: user.name, contact: user.contact } });
+        
+        const completedOrdersCount = await Order.countDocuments({ userId: req.user.id, status: 'Completed' });
+        const isTrusted = user.isTrusted || completedOrdersCount > 0;
+        
+        res.json({ success: true, user: { name: user.name, contact: user.contact, isTrusted } });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error fetching profile.' });
     }

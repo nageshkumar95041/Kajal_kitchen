@@ -1334,6 +1334,45 @@ async function initializePaymentPage() {
         console.error('Could not load saved address', e);
     }
 
+    // --- Trust Check for COD ---
+    const token = localStorage.getItem('authToken');
+    const codRadio = document.querySelector('input[value="cod"]');
+    if (codRadio) {
+        if (!token) {
+            codRadio.disabled = true;
+            const span = document.createElement('span');
+            span.style.cssText = "font-size: 0.8rem; color: #e74c3c; margin-left: 5px;";
+            span.innerText = "(Login required)";
+            if (codRadio.parentElement) {
+                codRadio.parentElement.style.opacity = '0.6';
+                codRadio.parentElement.appendChild(span);
+            }
+        } else {
+            fetch(`${API_BASE_URL}/api/profile`, { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && !data.user.isTrusted) {
+                        const currentCodRadio = document.querySelector('input[value="cod"]');
+                        if (currentCodRadio) {
+                            currentCodRadio.disabled = true;
+                            const onlineRadio = document.querySelector('input[value="online"]');
+                            if (onlineRadio && currentCodRadio.checked) {
+                                onlineRadio.checked = true;
+                            }
+                            const span = document.createElement('span');
+                            span.style.cssText = "font-size: 0.8rem; color: #e74c3c; margin-left: 5px;";
+                            span.innerText = "(Requires 1 completed order)";
+                            if (currentCodRadio.parentElement) {
+                                currentCodRadio.parentElement.style.opacity = '0.6';
+                                currentCodRadio.parentElement.appendChild(span);
+                            }
+                        }
+                    }
+                })
+                .catch(e => console.error('Error checking trust status', e));
+        }
+    }
+
     const form = document.getElementById('payment-form');
     const locateBtn = document.getElementById('locate-btn');
     if (locateBtn) {
