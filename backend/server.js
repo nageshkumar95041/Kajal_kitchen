@@ -19,7 +19,19 @@ const app = express();
 // Trust up to 3 proxy hops (Handles Cloudflare + Render proxy chaining)
 app.set('trust proxy', 3);
 
-app.use(helmet()); // Sets robust HTTP security headers (Clickjacking, XSS protection, etc.)
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://js.stripe.com", "https://cdn.socket.io", "https://unpkg.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://unpkg.com"],
+            imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://*.tile.openstreetmap.org", "https://via.placeholder.com"],
+            connectSrc: ["'self'", "ws:", "wss:", "https://accounts.google.com", "https://api.stripe.com", "https://nominatim.openstreetmap.org"],
+            frameSrc: ["'self'", "https://accounts.google.com", "https://js.stripe.com", "https://hooks.stripe.com"],
+        },
+    },
+    crossOriginEmbedderPolicy: false
+})); // Sets robust HTTP security headers while allowing necessary external resources
 
 app.post('/webhook', express.raw({type: 'application/json'}), handleStripeWebhook);
 
