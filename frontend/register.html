@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account | Kajal Ki Rasoi</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <nav id="navbar" class="scrolled">
@@ -14,27 +15,60 @@
             <li><a href="index.html#menu">Menu</a></li>
             <li><a href="index.html#about">About</a></li>
             <li><a href="index.html#contact">Contact</a></li>
-            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
             <li><a href="login.html">Login</a></li>
             <li><a href="register.html" style="color: #e67e22;">Sign Up</a></li>
         </ul>
+        <div class="nav-right">
+            <a href="cart.html" class="nav-cart-icon">Cart (<span id="cart-count">0</span>)</a>
+            <div class="menu-toggle" id="mobile-menu">&#9776;</div>
+        </div>
     </nav>
 
-    <section class="auth-page">
+    <main class="auth-page">
         <div class="auth-container">
-            <h2>Create Account</h2>
-            <form class="auth-form" onsubmit="handleRegistration(event)">
-                <input type="text" id="reg-name" placeholder="Full Name" required>
-                <input type="text" id="reg-contact" placeholder="Email or Phone Number" required>
-                <input type="password" id="reg-password" placeholder="Password" minlength="6" required>
-                <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Sign Up</button>
-            </form>
-        </div>
-    </section>
+            <div class="auth-header">
+                <div class="brand-logo">KK</div>
+                <h1 class="auth-title">Create your account</h1>
+                <p class="auth-subtitle">Join Kajal Kitchen and order your favourites</p>
+            </div>
 
-    <footer>
-        <p>&copy; 2023 Kajal Ki Rasoi. All Rights Reserved.</p>
-    </footer>
+            <form class="auth-form" onsubmit="handleRegistration(event)">
+                <div class="form-group">
+                    <label for="reg-name">Full name</label>
+                    <input type="text" id="reg-name" placeholder="e.g. Rahul Sharma" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-contact">Email address or Phone</label>
+                    <input type="text" id="reg-contact" placeholder="e.g. rahul@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="reg-password" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle" id="password-toggle">👁️</button>
+                    </div>
+                    <div class="password-strength-meter" id="password-strength-meter">
+                        <div class="strength-bar"></div>
+                        <div class="strength-bar"></div>
+                        <div class="strength-bar"></div>
+                        <div class="strength-bar"></div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-full">Create account</button>
+            </form>
+
+            <div class="divider">or</div>
+
+            <div id="google-btn-container">
+                <!-- Google Sign-In button will be rendered here by script.js -->
+            </div>
+            
+            <div class="auth-footer">
+                <p>Already have an account? <a href="login.html">Sign in</a></p>
+            </div>
+        </div>
+    </main>
+
     <script src="script.js"></script>
 </body>
 </html>

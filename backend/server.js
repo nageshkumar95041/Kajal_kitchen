@@ -103,7 +103,9 @@ const userSchema = new mongoose.Schema({
     contact: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true }, // In a real app, hash this with bcrypt!
     role: { type: String, default: 'user' },
-    isTrusted: { type: Boolean, default: false }
+    isTrusted: { type: Boolean, default: false },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date }
 }, { toJSON: { virtuals: true } });
 const User = mongoose.model('User', userSchema);
 
@@ -974,6 +976,67 @@ app.post('/api/google-login', async (req, res) => {
     } catch (error) {
         console.error('Google verification error:', error);
         res.status(401).json({ success: false, message: 'Invalid Google token' });
+    }
+});
+
+app.post('/api/forgot-password', authLimiter, async (req, res) => {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+        return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    }
+
+    try {
+        const user = await User.findOne({ contact: email.toLowerCase() });
+        if (!user) {
+            // Return success even if user doesn't exist to prevent email enumeration attacks
+            return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+        }
+
+        // Generate a random token and hash it for the database
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        user.resetPasswordExpires = Date.now() + 3600000; // Token expires in 1 hour
+        await user.save();
+
+        const frontendUrl = process.env.FRONTEND_URL || (req.headers.origin && req.headers.origin !== 'null' ? req.headers.origin : 'http://localhost:3000');
+        const resetUrl = `${frontendUrl}/reset-password.html?token=${resetToken}`;
+
+        const mailOptions = {
+            from: EMAIL_USER,
+            to: user.contact,
+            subject: 'Password Reset Request - Kajal Ki Rasoi',
+            html: `<h3>Password Reset Request</h3>
+                   <p>You requested to reset your password for Kajal Ki Rasoi.</p>
+                   <p>Please click the link below to set a new password. This link will expire in 1 hour.</p>
+                   <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background-color:#E07B2D; color:#fff; text-decoration:none; border-radius:5px; margin-top:10px;">Reset Password</a>
+                   <p style="margin-top:20px; font-size:0.85rem; color:#888;">If you did not request this, please ignore this email and your password will remain unchanged.</p>`
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ success: false, message: 'Error processing your request. Please try again later.' });
+    }
+});
+
+app.post('/api/reset-password', authLimiter, async (req, res) => {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).json({ success: false, message: 'Invalid request.' });
+
+    try {
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        const user = await User.findOne({ resetPasswordToken: hashedToken, resetPasswordExpires: { $gt: Date.now() } });
+        if (!user) return res.status(400).json({ success: false, message: 'Password reset token is invalid or has expired.' });
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        res.json({ success: true, message: 'Password has been successfully reset! You can now log in.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error resetting password.' });
     }
 });
 

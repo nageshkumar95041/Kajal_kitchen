@@ -135,6 +135,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.location.pathname.includes('login.html')) {
         initializeGoogleLogin();
+        const passwordInput = document.getElementById('login-password');
+        const passwordToggle = document.getElementById('password-toggle');
+        if (passwordInput && passwordToggle) {
+            passwordToggle.addEventListener('click', () => {
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                passwordToggle.textContent = isPassword ? '🙈' : '👁️';
+            });
+        }
+    }
+
+    if (window.location.pathname.includes('register.html')) {
+        initializeGoogleLogin();
+        const passwordInput = document.getElementById('reg-password');
+        const passwordToggle = document.getElementById('password-toggle');
+        const strengthMeter = document.getElementById('password-strength-meter');
+
+        if (passwordInput && passwordToggle) {
+            passwordToggle.addEventListener('click', () => {
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                passwordToggle.textContent = isPassword ? '🙈' : '👁️';
+            });
+        }
+
+        if (passwordInput && strengthMeter) {
+            passwordInput.addEventListener('input', () => {
+                updatePasswordStrength(passwordInput.value);
+            });
+        }
+    }
+
+    if (window.location.pathname.includes('reset-password.html')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (!token) {
+            showCustomAlert('Invalid or missing reset token.', () => window.location.href = 'login.html');
+        } else {
+            const resetForm = document.getElementById('reset-password-form');
+            if (resetForm) {
+                resetForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const newPassword = document.getElementById('reset-password').value;
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/reset-password`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token, newPassword })
+                        });
+                        const data = await response.json();
+                        if (response.ok) { showCustomAlert(data.message, () => window.location.href = 'login.html'); } 
+                        else { showCustomAlert(data.message); }
+                    } catch (error) {
+                        showCustomAlert('Error connecting to server.');
+                    }
+                });
+            }
+        }
     }
 
     updateAuthNav();
@@ -202,7 +261,7 @@ function orderItem(itemName, price) {
         cartIcon.classList.add('cart-bump');
     }
 
-    showCustomAlert(`Great choice! ${itemName} has been added to your cart.`);
+    showToast(itemName, price);
 }
 
 function showStickyCart() {
@@ -453,6 +512,82 @@ function showCustomAlert(message, callback) {
     box.appendChild(btn);
     overlay.appendChild(box);
     document.body.appendChild(overlay);
+}
+
+function showToast(itemName, price) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    
+    toast.innerHTML = `
+        <div class="toast-header">
+            <div class="toast-icon">✅</div>
+            <div class="toast-content">
+                <div class="toast-title">Added to cart</div>
+                <div class="toast-desc">${escapeHTML(itemName)} - ₹${price}</div>
+            </div>
+            <button class="toast-close">&times;</button>
+        </div>
+        <div class="toast-actions">
+            <a href="cart.html" class="toast-btn toast-btn-primary">View Cart</a>
+            <button class="toast-btn toast-btn-secondary toast-keep-browsing">Keep Browsing</button>
+        </div>
+        <div class="toast-progress">
+            <div class="toast-progress-bar"></div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    const removeToast = () => {
+        if (toast.classList.contains('hiding')) return;
+        toast.classList.add('hiding');
+        toast.addEventListener('animationend', () => {
+            if (toast.parentElement) toast.parentElement.removeChild(toast);
+        });
+    };
+
+    const timeout = setTimeout(removeToast, 3500);
+
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        clearTimeout(timeout);
+        removeToast();
+    });
+
+    toast.querySelector('.toast-keep-browsing').addEventListener('click', () => {
+        clearTimeout(timeout);
+        removeToast();
+    });
+}
+
+function updatePasswordStrength(password) {
+    const strengthMeter = document.getElementById('password-strength-meter');
+    if (!strengthMeter) return;
+    
+    const bars = strengthMeter.querySelectorAll('.strength-bar');
+    let strength = 0;
+
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+    bars.forEach((bar, index) => {
+        bar.className = 'strength-bar'; // Reset
+        if (index < strength) {
+            if (strength === 1) bar.classList.add('weak');
+            else if (strength === 2) bar.classList.add('medium');
+            else if (strength === 3) bar.classList.add('strong');
+            else if (strength === 4) bar.classList.add('very-strong');
+        }
+    });
 }
 
 function checkoutCart() {
@@ -1881,15 +2016,67 @@ async function initializeGoogleLogin() {
                     callback: handleGoogleLogin,
                     auto_prompt: false
                 });
+                
+                let btnWidth = container.offsetWidth || 340; // 340px is the approx inner width of our form container
                 google.accounts.id.renderButton(
                     container,
-                    { theme: 'outline', size: 'large', type: 'standard' }
+                    { theme: 'outline', size: 'large', type: 'standard', width: btnWidth }
                 );
             }
         }, 100);
     } catch (error) {
         console.error('Failed to load Google configuration.');
     }
+}
+
+function showForgotPasswordModal(event) {
+    if (event) event.preventDefault();
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-alert-page';
+    
+    const content = document.createElement('div');
+    content.className = 'custom-alert-box';
+    content.style.textAlign = 'left';
+    
+    content.innerHTML = `
+        <h3 style="margin-bottom: 1rem; color: #2c3e50; text-align: center;">Reset Password</h3>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; text-align: center;">Enter the email address associated with your account, and we'll send you a secure link to reset your password.</p>
+        <form id="forgot-password-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+                <input type="email" id="fp-email" required style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem;" placeholder="e.g. rahul@example.com">
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                <button type="submit" class="btn" style="flex: 1; border-radius: 8px;">Send Reset Link</button>
+                <button type="button" class="btn" style="flex: 1; background-color: #f1f2f6; color: #333; border-radius: 8px;" onclick="document.body.removeChild(this.closest('#custom-alert-page'))">Cancel</button>
+            </div>
+        </form>
+    `;
+    
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+    
+    document.getElementById('forgot-password-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('fp-email').value;
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Sending...';
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            document.body.removeChild(overlay);
+            showCustomAlert(data.message);
+        } catch (error) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Send Reset Link';
+            showCustomAlert('Error connecting to the server.');
+        }
+    };
 }
 
 function updateAuthNav() {
