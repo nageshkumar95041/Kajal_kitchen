@@ -64,6 +64,14 @@ const authLimiter = rateLimit({
     message: { success: false, message: 'Too many authentication attempts, please try again later.' }
 });
 
+// Specific Rate Limiter for Forgot Password to prevent email spam
+const forgotPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 3, // Limit each IP to 3 password reset requests per windowMs
+    validate: { trustProxy: false },
+    message: { success: false, message: 'Too many password reset requests from this IP, please try again after 15 minutes.' }
+});
+
 // Serve static files from the frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
@@ -877,6 +885,14 @@ app.put('/api/profile', authenticateUser, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid input format.' });
     }
 
+    if (contact) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+        if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+            return res.status(400).json({ success: false, message: 'Please provide a valid email address or a 10-digit phone number.' });
+        }
+    }
+
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
@@ -909,6 +925,12 @@ app.post('/api/register', authLimiter, async (req, res) => {
         return res.status(400).json({ success: false, message: 'All fields are required and must be valid text.' });
     }
     
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+        return res.status(400).json({ success: false, message: 'Please provide a valid email address or a 10-digit phone number.' });
+    }
+
     try {
         const userExists = await User.findOne({ contact: contact.toLowerCase() });
         if (userExists) {
@@ -928,6 +950,12 @@ app.post('/api/login', authLimiter, async (req, res) => {
     
     if (!contact || !password || typeof contact !== 'string' || typeof password !== 'string') {
         return res.status(400).json({ success: false, message: 'Valid contact and password are required.' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+        return res.status(400).json({ success: false, message: 'Please provide a valid email address or a 10-digit phone number.' });
     }
 
     try {
@@ -979,7 +1007,7 @@ app.post('/api/google-login', async (req, res) => {
     }
 });
 
-app.post('/api/forgot-password', authLimiter, async (req, res) => {
+app.post('/api/forgot-password', forgotPasswordLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email || !email.includes('@')) {
         return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
@@ -990,6 +1018,12 @@ app.post('/api/forgot-password', authLimiter, async (req, res) => {
         if (!user) {
             // Return success even if user doesn't exist to prevent email enumeration attacks
             return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+        }
+
+        // Prevent email spam by forcing a 2-minute wait between requests for the same account
+        const twoMinutesAgo = Date.now() + 58 * 60 * 1000; // 60 mins (expiry time) - 2 mins
+        if (user.resetPasswordExpires && user.resetPasswordExpires > twoMinutesAgo) {
+            return res.status(429).json({ success: false, message: 'A reset link was recently sent. Please check your inbox or wait a couple of minutes before requesting another.' });
         }
 
         // Generate a random token and hash it for the database
@@ -1037,6 +1071,40 @@ app.post('/api/reset-password', authLimiter, async (req, res) => {
         res.json({ success: true, message: 'Password has been successfully reset! You can now log in.' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error resetting password.' });
+    }
+});
+
+app.post('/api/contact', apiLimiter, async (req, res) => {
+    const { name, contact, message } = req.body;
+    
+    if (!name || !contact || !message) {
+        return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+        return res.status(400).json({ success: false, message: 'Please provide a valid email address or a 10-digit phone number.' });
+    }
+
+    try {
+        const mailOptions = {
+            from: EMAIL_USER,
+            to: 'kajalkirasoi4@gmail.com', // Sending specifically to the requested inbox
+            replyTo: contact.includes('@') ? contact : undefined, // Allow easy email replies if they provided an email
+            subject: `New Contact Request from ${name} - Kajal Ki Rasoi`,
+            html: `<h3>New Contact Request</h3>
+                   <p><strong>Name:</strong> ${name}</p>
+                   <p><strong>Contact Details:</strong> ${contact}</p>
+                   <p><strong>Message:</strong></p>
+                   <blockquote style="background: #f9f9f9; padding: 15px; border-left: 5px solid #E07B2D;">${message.replace(/\n/g, '<br>')}</blockquote>`
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ success: true, message: 'Message sent successfully.' });
+    } catch (error) {
+        console.error('Contact Form Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to send the message. Please try again later.' });
     }
 });
 

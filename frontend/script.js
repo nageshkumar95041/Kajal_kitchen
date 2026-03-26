@@ -79,11 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         
         if (!user || user.role !== 'admin' || !token) {
-            showCustomAlert('Access Denied. Administrator login required.', () => { 
+            showSystemToast('Error', 'Access Denied. Administrator login required.', 'error');
+            setTimeout(() => {
                 localStorage.removeItem('loggedInUser');
                 localStorage.removeItem('authToken');
-                window.location.href = 'login.html'; 
-            });
+                window.location.href = 'login.html';
+            }, 2000);
         } else {
             // Initialize theme
             if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -114,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('sub_success') === 'true') {
-        showCustomAlert('Payment successful! Your subscription is now Active. 🎉');
+        showSystemToast('Success', 'Payment successful! Your subscription is now Active. 🎉');
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
@@ -172,7 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = urlParams.get('token');
         
         if (!token) {
-            showCustomAlert('Invalid or missing reset token.', () => window.location.href = 'login.html');
+            showSystemToast('Error', 'Invalid or missing reset token.', 'error');
+            setTimeout(() => window.location.href = 'login.html', 2000);
         } else {
             const resetForm = document.getElementById('reset-password-form');
             if (resetForm) {
@@ -186,10 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             body: JSON.stringify({ token, newPassword })
                         });
                         const data = await response.json();
-                        if (response.ok) { showCustomAlert(data.message, () => window.location.href = 'login.html'); } 
-                        else { showCustomAlert(data.message); }
+                        if (response.ok) { showSystemToast('Success', data.message); setTimeout(() => window.location.href = 'login.html', 2000); } 
+                        else { showSystemToast('Error', data.message, 'error'); }
                     } catch (error) {
-                        showCustomAlert('Error connecting to server.');
+                        showSystemToast('Error', 'Error connecting to server.', 'error');
                     }
                 });
             }
@@ -225,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadAdminDashboardStats();
             } else if(window.location.pathname.includes('my-orders.html')) {
                 if (data && data.type === 'ORDER_COMPLETED') {
-                    showCustomAlert('Your order has been delivered! Please consider leaving a review.');
+                    showSystemToast('Success', 'Your order has been delivered! Please consider leaving a review.');
                 }
                 loadMyOrders();
             }
@@ -236,9 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function orderItem(itemName, price) {
     const token = localStorage.getItem('authToken');
     if (!token) {
-        showCustomAlert('Please login to add items to your cart.', () => {
-            window.location.href = 'login.html';
-        });
+        showSystemToast('Info', 'Please login to add items to your cart.');
+        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
         return;
     }
 
@@ -567,6 +568,46 @@ function showToast(itemName, price) {
     });
 }
 
+function showSystemToast(title, message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    
+    const icon = type === 'success' ? '✅' : '❌';
+    const iconColor = type === 'success' ? '#2ecc71' : '#e74c3c';
+    const progressColor = type === 'success' ? '#E07B2D' : '#e74c3c';
+
+    toast.innerHTML = `
+        <div class="toast-header">
+            <div class="toast-icon" style="color: ${iconColor}">${icon}</div>
+            <div class="toast-content">
+                <div class="toast-title">${escapeHTML(title)}</div>
+                <div class="toast-desc">${escapeHTML(message)}</div>
+            </div>
+            <button class="toast-close">&times;</button>
+        </div>
+        <div class="toast-progress">
+            <div class="toast-progress-bar" style="background: ${progressColor};"></div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    const removeToast = () => {
+        if (toast.classList.contains('hiding')) return;
+        toast.classList.add('hiding');
+        toast.addEventListener('animationend', () => { if (toast.parentElement) toast.parentElement.removeChild(toast); });
+    };
+    const timeout = setTimeout(removeToast, 3500);
+    toast.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timeout); removeToast(); });
+}
+
 function updatePasswordStrength(password) {
     const strengthMeter = document.getElementById('password-strength-meter');
     if (!strengthMeter) return;
@@ -593,15 +634,47 @@ function updatePasswordStrength(password) {
 function checkoutCart() {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     if (cart.length === 0) {
-        showCustomAlert('Your cart is empty!');
+        showSystemToast('Info', 'Your cart is empty!');
         return;
     }
     window.location.href = 'payment.html';
 }
 
-function handleContactSubmit(event) {
+async function handleContactSubmit(event) {
     event.preventDefault();
-    showCustomAlert('Message sent successfully!');
+    
+    const name = document.getElementById('contact-name').value;
+    const contact = document.getElementById('contact-email-phone').value.trim();
+    const message = document.getElementById('contact-message').value;
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+        showSystemToast('Error', 'Please enter a valid email address or a 10-digit phone number.', 'error');
+        return;
+    }
+
+    const submitBtn = document.getElementById('contact-submit-btn');
+    
+    const originalText = submitBtn.innerText;
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'Sending...';
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/contact`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, contact, message })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showSystemToast('Success', 'Message sent successfully!');
+            event.target.reset(); // clear the form
+        } else { showSystemToast('Error', data.message || 'Failed to send message.', 'error'); }
+    } catch (error) { showSystemToast('Error', 'Error connecting to the server.', 'error'); } 
+    
+    submitBtn.disabled = false;
+    submitBtn.innerText = originalText;
 }
 
 /* --- Admin Dashboard Functions --- */
@@ -716,7 +789,8 @@ async function loadAdminOrders() {
         });
         
         if (response.status === 401 || response.status === 403) {
-            showCustomAlert('Session expired or unauthorized access.', () => window.location.href = 'login.html');
+            showSystemToast('Error', 'Session expired or unauthorized access.', 'error');
+            setTimeout(() => { window.location.href = 'login.html'; }, 2000);
             return;
         }
         
@@ -783,7 +857,7 @@ async function loadAdminOrders() {
         
         container.innerHTML = ordersHtml;
     } catch (error) {
-        container.innerHTML = '<p class="empty-cart" style="color:red;">Error connecting to the backend server.</p>';
+        showSystemToast('Error', 'Error connecting to the backend server.', 'error');
     }
 }
 
@@ -874,7 +948,7 @@ async function updateSubscriptionStatus(id, status) {
         } else {
             loadAdminSubscriptions();
         }
-    } catch (error) { showCustomAlert('Failed to update subscription status.'); }
+    } catch (error) { showSystemToast('Error', 'Failed to update subscription status.', 'error'); }
 }
 
 async function loadAdminCustomers() {
@@ -954,7 +1028,7 @@ async function viewCustomerHistory(contact, name) {
         overlay.appendChild(modalContent);
         document.body.appendChild(overlay);
     } catch (error) {
-        showCustomAlert('Error fetching customer history.');
+        showSystemToast('Error', 'Error fetching customer history.', 'error');
     }
 }
 
@@ -972,7 +1046,8 @@ async function loadMyOrders() {
         });
         
         if (response.status === 401 || response.status === 403) {
-            showCustomAlert('Session expired. Please log in again.', () => window.location.href = 'login.html');
+            showSystemToast('Error', 'Session expired. Please log in again.', 'error');
+            setTimeout(() => window.location.href = 'login.html', 2000);
             return;
         }
         
@@ -1060,7 +1135,7 @@ function generateActiveOrderHTML(order) {
 
             <div class="order-actions-row">
                 ${order.status === 'Pending' ? `<button class="btn-outline" style="color: #e74c3c; border-color: #e74c3c;" onclick="cancelOrder('${safeId}')">Cancel Order</button>` : ''}
-                <button class="btn-outline" onclick="showCustomAlert('Please call us at: +91 7366952957')">📞 Call Support</button>
+                <button class="btn-outline" onclick="showSystemToast('Support', 'Please call us at: +91 7366952957')">📞 Call Support</button>
                 ${order.status === 'Out for Delivery' ? `<button class="btn" style="padding: 8px 20px;" onclick="trackDelivery('${safeId}')">📍 Track Map</button>` : ''}
             </div>
         </div>
@@ -1109,7 +1184,8 @@ async function loadAdminMenu() {
         });
         
         if (response.status === 401 || response.status === 403) {
-            showCustomAlert('Session expired. Please log in again.', () => window.location.href = 'login.html');
+            showSystemToast('Error', 'Session expired. Please log in again.', 'error');
+            setTimeout(() => window.location.href = 'login.html', 2000);
             return;
         }
         
@@ -1285,13 +1361,14 @@ function showMenuModal(item = null) {
             
             if (res.ok) {
                 document.body.removeChild(overlay);
-                showCustomAlert(id ? 'Item updated successfully.' : 'Item added successfully.', loadAdminMenu);
+                showSystemToast('Success', id ? 'Item updated successfully.' : 'Item added successfully.');
+                loadAdminMenu();
             } else {
                 const data = await res.json();
-                showCustomAlert(data.message || 'Failed to save item.');
+                showSystemToast('Error', data.message || 'Failed to save item.', 'error');
             }
         } catch (error) {
-            showCustomAlert('Error connecting to server.');
+            showSystemToast('Error', 'Error connecting to server.', 'error');
         }
     };
 }
@@ -1307,13 +1384,14 @@ async function deleteMenuItem(id) {
         });
         
         if (res.ok) {
-            showCustomAlert('Menu item deleted.', loadAdminMenu);
+            showSystemToast('Success', 'Menu item deleted.');
+            loadAdminMenu();
         } else {
             const data = await res.json();
-            showCustomAlert(data.message || 'Failed to delete item.');
+            showSystemToast('Error', data.message || 'Failed to delete item.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Error connecting to server.');
+        showSystemToast('Error', 'Error connecting to server.', 'error');
     }
 }
 
@@ -1330,10 +1408,10 @@ async function toggleMenuItemAvailability(id, currentStatus) {
             loadAdminMenu();
         } else {
             const data = await res.json();
-            showCustomAlert(data.message || 'Failed to update availability.');
+            showSystemToast('Error', data.message || 'Failed to update availability.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Error connecting to server.');
+        showSystemToast('Error', 'Error connecting to server.', 'error');
     }
 }
 
@@ -1348,11 +1426,11 @@ async function updateOrderStatus(orderId, status) {
 
         if (!response.ok) {
             const data = await response.json();
-            showCustomAlert(data.message || 'Failed to update order status.');
+            showSystemToast('Error', data.message || 'Failed to update order status.', 'error');
         }
         // The WebSocket listener will automatically call loadAdminOrders() on success.
     } catch (error) {
-        showCustomAlert('Error communicating with the server.');
+        showSystemToast('Error', 'Error communicating with the server.', 'error');
     }
 }
 
@@ -1368,10 +1446,10 @@ async function deleteOrder(orderId) {
         });
 
         if (!response.ok) {
-            showCustomAlert('Failed to delete order.');
+            showSystemToast('Error', 'Failed to delete order.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Error communicating with the server.');
+        showSystemToast('Error', 'Error communicating with the server.', 'error');
     }
 }
 
@@ -1386,12 +1464,13 @@ async function cancelOrder(orderId) {
         });
         const data = await response.json();
         if (response.ok) {
-            showCustomAlert('Order cancelled successfully.', () => loadMyOrders());
+            showSystemToast('Success', 'Order cancelled successfully.');
+            loadMyOrders();
         } else {
-            showCustomAlert(data.message || 'Failed to cancel order.');
+            showSystemToast('Error', data.message || 'Failed to cancel order.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Error communicating with the server.');
+        showSystemToast('Error', 'Error communicating with the server.', 'error');
     }
 }
 
@@ -1404,7 +1483,8 @@ function reorderItems(items) {
     });
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
-    showCustomAlert('Items added to cart!', () => window.location.href = 'cart.html');
+    showSystemToast('Success', 'Items added to cart!');
+    setTimeout(() => { window.location.href = 'cart.html'; }, 1500);
 }
 
 function trackDelivery(orderId, hasRated = false) {
@@ -1915,8 +1995,15 @@ async function verifyStripeSession(sessionId) {
 async function handleRegistration(event) {
     event.preventDefault();
     const name = document.getElementById('reg-name').value;
-    const contact = document.getElementById('reg-contact').value;
+    const contact = document.getElementById('reg-contact').value.trim();
     const password = document.getElementById('reg-password').value;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+        showSystemToast('Error', 'Please enter a valid email address or a 10-digit phone number.', 'error');
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/register`, {
@@ -1927,20 +2014,28 @@ async function handleRegistration(event) {
         const data = await response.json();
 
         if (response.ok) {
-            showCustomAlert('Account created successfully! Please login.', () => { window.location.href = 'login.html'; });
+            showSystemToast('Success', 'Account created successfully! Redirecting...');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
         } else {
-            showCustomAlert(data.message || 'Registration failed.');
+            showSystemToast('Error', data.message || 'Registration failed.', 'error');
         }
     } catch (error) {
         console.error('Registration Error:', error);
-        showCustomAlert('Network Error: Could not connect to the server.');
+        showSystemToast('Error', 'Network Error: Could not connect to the server.', 'error');
     }
 }
 
 async function handleLogin(event) {
     event.preventDefault();
-    const contact = document.getElementById('login-contact').value;
+    const contact = document.getElementById('login-contact').value.trim();
     const password = document.getElementById('login-password').value;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+        showSystemToast('Error', 'Please enter a valid email address or a 10-digit phone number.', 'error');
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/login`, {
@@ -1954,19 +2049,20 @@ async function handleLogin(event) {
             localStorage.setItem('loggedInUser', JSON.stringify(data.user));
             localStorage.setItem('authToken', data.token);
             
-            showCustomAlert(`Welcome back, ${data.user.name}!`, () => { 
+            showSystemToast('Success', `Welcome back, ${data.user.name}!`);
+            setTimeout(() => {
                 if (data.user.role === 'admin') {
                     window.location.href = 'admin.html';
                 } else {
                     window.location.href = 'index.html'; 
                 }
-            });
+            }, 1000);
         } else {
-            showCustomAlert(data.message || 'Invalid credentials.');
+            showSystemToast('Error', data.message || 'Invalid credentials.', 'error');
         }
     } catch (error) {
         console.error('Login Error:', error);
-        showCustomAlert('Network Error: Could not connect to the server.');
+        showSystemToast('Error', 'Network Error: Could not connect to the server.', 'error');
     }
 }
 
@@ -1984,18 +2080,19 @@ async function handleGoogleLogin(response) {
             localStorage.setItem('loggedInUser', JSON.stringify(data.user));
             localStorage.setItem('authToken', data.token);
             
-            showCustomAlert(`Welcome, ${data.user.name}!`, () => { 
+            showSystemToast('Success', `Welcome, ${data.user.name}!`);
+            setTimeout(() => { 
                 if (data.user.role === 'admin') {
                     window.location.href = 'admin.html';
                 } else {
                     window.location.href = 'index.html'; 
                 }
-            });
+            }, 1000);
         } else {
-            showCustomAlert(data.message || 'Google Login failed.');
+            showSystemToast('Error', data.message || 'Google Login failed.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Server error. Ensure the backend is running.');
+        showSystemToast('Error', 'Server error. Ensure the backend is running.', 'error');
     }
 }
 
@@ -2070,11 +2167,15 @@ function showForgotPasswordModal(event) {
             });
             const data = await response.json();
             document.body.removeChild(overlay);
-            showCustomAlert(data.message);
+            if (response.ok || data.success) {
+                showSystemToast('Success', data.message);
+            } else {
+                showSystemToast('Error', data.message || 'Error processing request.', 'error');
+            }
         } catch (error) {
             submitBtn.disabled = false;
             submitBtn.innerText = 'Send Reset Link';
-            showCustomAlert('Error connecting to the server.');
+            showSystemToast('Error', 'Error connecting to the server.', 'error');
         }
     };
 }
@@ -2194,12 +2295,13 @@ async function submitReview(orderId, rating, review) {
         });
         const data = await response.json();
         if (response.ok) {
-            showCustomAlert(data.message || 'Thank you for your feedback!', () => loadMyOrders());
+            showSystemToast('Success', data.message || 'Thank you for your feedback!');
+            loadMyOrders();
         } else {
-            showCustomAlert(data.message || 'Could not submit review.');
+            showSystemToast('Error', data.message || 'Could not submit review.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Error communicating with the server.');
+        showSystemToast('Error', 'Error communicating with the server.', 'error');
     }
 }
 
@@ -2210,7 +2312,8 @@ async function loadProfile() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.status === 401 || response.status === 403) {
-            showCustomAlert('Session expired. Please log in again.', () => window.location.href = 'login.html');
+            showSystemToast('Error', 'Session expired. Please log in again.', 'error');
+            setTimeout(() => { window.location.href = 'login.html'; }, 2000);
             return;
         }
         const data = await response.json();
@@ -2245,14 +2348,14 @@ async function loadProfile() {
             }
         }
     } catch (error) {
-        showCustomAlert('Error fetching profile.');
+        showSystemToast('Error', 'Error fetching profile.', 'error');
     }
 }
 
 function repeatLastOrder() {
     const lastOrderNameEl = document.getElementById('last-order-name');
     if (!lastOrderNameEl || !lastOrderNameEl.dataset.items) {
-        showCustomAlert("You have no past orders to repeat yet!");
+        showSystemToast('Info', "You have no past orders to repeat yet!");
         return;
     }
     try {
@@ -2271,21 +2374,20 @@ function repeatLastOrder() {
         localStorage.setItem('cart', JSON.stringify(cart));
         updateCartCount();
         
-        showCustomAlert("Items from your last order have been added to the cart!", () => {
-            window.location.href = 'cart.html';
-        });
+        showSystemToast('Success', "Items from your last order have been added to the cart!");
+        setTimeout(() => { window.location.href = 'cart.html'; }, 1500);
     } catch(e) {
-        showCustomAlert("Could not process repeat order.");
+        showSystemToast('Error', "Could not process repeat order.", 'error');
     }
 }
 
 function handleLogout() {
-    showCustomAlert("Are you sure you want to log out?", () => {
+    if (confirm("Are you sure you want to log out?")) {
         localStorage.removeItem('loggedInUser');
         localStorage.removeItem('authToken');
         localStorage.removeItem('cart'); // Clear cart on logout
         window.location.href = 'index.html';
-    });
+    }
 }
 
 function showEditProfileModal() {
@@ -2330,8 +2432,15 @@ async function handleProfileUpdate(event) {
     event.preventDefault();
     const token = localStorage.getItem('authToken');
     const name = document.getElementById('profile-name').value;
-    const contact = document.getElementById('profile-contact').value;
+    const contact = document.getElementById('profile-contact').value.trim();
     const password = document.getElementById('profile-password').value;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
+    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
+        showSystemToast('Error', 'Please enter a valid email address or a 10-digit phone number.', 'error');
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/profile`, {
@@ -2345,12 +2454,13 @@ async function handleProfileUpdate(event) {
         const data = await response.json();
         if (response.ok) {
             localStorage.setItem('loggedInUser', JSON.stringify(data.user));
-            showCustomAlert('Profile updated successfully!', () => window.location.reload());
+            showSystemToast('Success', 'Profile updated successfully!');
+            setTimeout(() => window.location.reload(), 1500);
         } else {
-            showCustomAlert(data.message || 'Failed to update profile.');
+            showSystemToast('Error', data.message || 'Failed to update profile.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Error updating profile.');
+        showSystemToast('Error', 'Error updating profile.', 'error');
     }
 }
 
@@ -2365,10 +2475,10 @@ async function viewReceipt(orderId) {
         if (data.success) {
             showReceiptModal(data.order);
         } else {
-            showCustomAlert(data.message || 'Could not fetch receipt.');
+            showSystemToast('Error', data.message || 'Could not fetch receipt.', 'error');
         }
     } catch (error) {
-        showCustomAlert('Error communicating with server.');
+        showSystemToast('Error', 'Error communicating with server.', 'error');
     }
 }
 
@@ -2512,9 +2622,10 @@ async function submitSubscription(e, plan, frequency, price, persons, couponCode
             const data = await res.json();
             if (res.ok) {
                 document.body.removeChild(modalOverlay);
-                showCustomAlert(data.message, () => window.location.reload());
-            } else { showCustomAlert(data.message || 'Failed to submit request.'); }
-        } catch (err) { showCustomAlert('Network error connecting to server.'); }
+                showSystemToast('Success', data.message);
+                setTimeout(() => window.location.reload(), 1500);
+            } else { showSystemToast('Error', data.message || 'Failed to submit request.', 'error'); }
+        } catch (err) { showSystemToast('Error', 'Network error connecting to server.', 'error'); }
     } else {
         if (typeof Stripe === 'undefined') {
             await new Promise(resolve => {
@@ -2540,7 +2651,7 @@ async function submitSubscription(e, plan, frequency, price, persons, couponCode
             if (data.id) {
                 const stripe = Stripe(publishableKey);
                 stripe.redirectToCheckout({ sessionId: data.id });
-            } else { showCustomAlert(data.error || 'Checkout failed.'); }
-        } catch (err) { showCustomAlert('Payment error.'); }
+            } else { showSystemToast('Error', data.error || 'Checkout failed.', 'error'); }
+        } catch (err) { showSystemToast('Error', 'Payment error.', 'error'); }
     }
 }
