@@ -742,17 +742,29 @@ app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
 
 app.post('/api/orders/:id/review', authenticateUser, async (req, res) => {
     const { rating, review } = req.body;
+    const numRating = Number(rating);
+
+    if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+        return res.status(400).json({ success: false, message: 'Invalid rating. Please provide a number between 1 and 5.' });
+    }
+
     try {
-        const order = await Order.findById(req.params.id);
-        if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
-        if (order.userId !== req.user.id) return res.status(403).json({ success: false, message: 'Unauthorized access.' });
-        
-        order.rating = Number(rating);
-        order.review = review;
-        await order.save();
+        // Use updateOne to update the document directly in MongoDB.
+        // This avoids the "Cast to date failed" error because Mongoose doesn't try to
+        // hydrate (load and validate) the existing document fields like 'timestamp'.
+        const result = await Order.updateOne(
+            { _id: req.params.id, userId: req.user.id },
+            { $set: { rating: numRating, review: review } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ success: false, message: 'Order not found or unauthorized.' });
+        }
+
         res.json({ success: true, message: 'Thank you for your feedback!' });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to submit review.' });
+        console.error(`Error submitting review for order ID: ${req.params.id}`, error);
+        res.status(500).json({ success: false, message: 'Failed to submit review. Internal server error.' });
     }
 });
 
