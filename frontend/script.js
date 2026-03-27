@@ -64,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html')) {
         loadMenu();
         showStickyCart();
+        // Add event listener for menu card interactions
+        const menuContainer = document.getElementById('dynamic-menu-container');
+        if (menuContainer) {
+            menuContainer.addEventListener('click', handleMenuInteraction);
+        }
     }
 
     if(window.location.pathname.includes('cart.html')) {
@@ -235,36 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function orderItem(itemName, price) {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        showSystemToast('Info', 'Please login to add items to your cart.');
-        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
-        return;
-    }
-
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    let existing = cart.find(i => i.name === itemName);
-    if (existing) {
-        existing.quantity = (existing.quantity || 1) + 1;
-    } else {
-        cart.push({ name: itemName, price: price, quantity: 1 });
-    }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    
-    updateCartCount();
-    if (typeof showStickyCart === 'function') showStickyCart();
-    
-    const cartIcon = document.querySelector('.nav-cart-icon');
-    if (cartIcon) {
-        cartIcon.classList.remove('cart-bump');
-        void cartIcon.offsetWidth; // trigger reflow to restart animation
-        cartIcon.classList.add('cart-bump');
-    }
-
-    showToast(itemName, price);
-}
-
 function showStickyCart() {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     let sticky = document.getElementById('sticky-cart');
@@ -288,7 +263,7 @@ function showStickyCart() {
 
 let allMenuItems = []; // To store all menu items for filtering
 
-function generateMenuItemHTML(item) {
+function generateMenuItemHTML(item, cart) {
     const safeName = escapeHTML(item.name);
     const itemImage = item.imageUrl && item.imageUrl.trim() !== '' ? escapeHTML(item.imageUrl) : getDefaultImage(safeName);
     const isBestseller = safeName.includes('Thali') || safeName.includes('Paneer') || safeName.includes('Biryani');
@@ -296,9 +271,33 @@ function generateMenuItemHTML(item) {
     const isVeg = !safeName.toLowerCase().includes('chicken') && !safeName.toLowerCase().includes('egg');
     const urgency = Math.random() > 0.85 && item.available !== false ? `<span class="urgency-text">🔥 Only a few left!</span>` : '';
     const isAvailable = item.available !== false;
-    
-    const buttonHtml = isAvailable ? `<button class="btn-order" onclick="orderItem('${safeName.replace(/'/g, "\\'")}', ${item.price})">＋ Add</button>` : `<button class="btn-order" style="background-color: #95a5a6; cursor: not-allowed;" disabled>Sold Out</button>`;
-    
+
+    // Mock data for visual representation as it's not in the backend schema
+    const ratings = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8"];
+    const rating = ratings[Math.floor(Math.random() * ratings.length)];
+    const deliveryTimes = ["20-25 min", "25-30 min", "30-35 min", "35-40 min"];
+    const deliveryTime = deliveryTimes[Math.floor(Math.random() * deliveryTimes.length)];
+
+    const cartItem = cart.find(i => i.name === safeName);
+    const quantity = cartItem ? cartItem.quantity : 0;
+
+    let actionControlHTML;
+    if (isAvailable) {
+        if (quantity > 0) {
+            actionControlHTML = `
+                <div class="qty-stepper">
+                    <button data-action="decrease">-</button>
+                    <span>${quantity}</span>
+                    <button data-action="increase">+</button>
+                </div>
+            `;
+        } else {
+            actionControlHTML = `<button class="btn-order" data-action="add">＋ Add</button>`;
+        }
+    } else {
+        actionControlHTML = `<button class="btn-order" style="background-color: #95a5a6; cursor: not-allowed;" disabled>Sold Out</button>`;
+    }
+
     let tagHtml = '';
     if (isRecommended && isAvailable) {
         tagHtml = '<span class="badge badge-recommended">🔥 Recommended</span>';
@@ -307,23 +306,26 @@ function generateMenuItemHTML(item) {
     }
     
     return `
-        <div class="menu-card ${!isAvailable ? 'item-unavailable' : ''}">
+        <div class="menu-card ${!isAvailable ? 'item-unavailable' : ''}" data-name="${safeName}" data-price="${item.price}">
             <div class="card-img-container">
                 <img src="${itemImage}" alt="${safeName}" class="card-img" loading="lazy">
                 ${tagHtml}
-                ${isVeg && isAvailable ? '<span class="badge badge-veg">🌱 Veg</span>' : ''}
+                ${isVeg && isAvailable ? '<span class="badge badge-veg"><span class="veg-dot"></span>Veg</span>' : ''}
                 ${!isAvailable ? '<span class="badge badge-sold-out">Sold Out</span>' : ''}
             </div>
             <div class="card-content">
                 <div class="card-title-row">
                     <h3>${safeName}</h3>
-                    ${item.rating ? `<span class="rating-badge">★ ${item.rating.toFixed(1)}</span>` : ''}
                 </div>
                 <p class="card-description">${escapeHTML(item.description || '')}</p>
                 ${urgency}
+                <div class="card-meta-info">
+                    <span class="meta-rating">★ ${rating}</span>
+                    <span class="meta-delivery">· ${deliveryTime}</span>
+                </div>
                 <div class="card-footer">
                     <span class="price">₹${item.price}</span>
-                    ${buttonHtml}
+                    <div class="card-action-control">${actionControlHTML}</div>
                 </div>
             </div>
         </div>
@@ -368,6 +370,7 @@ function renderFilteredMenu() {
     const priceFilter = document.getElementById('price-filter').value;
     const popularFilter = document.getElementById('popular-filter').checked;
 
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
     let filteredItems = allMenuItems;
 
     // Apply veg/non-veg filter
@@ -415,12 +418,91 @@ function renderFilteredMenu() {
         if (groupedMenu[cat] && groupedMenu[cat].length > 0) {
             html += `<h2 class="menu-category-title">${cat}</h2>`;
             html += '<div class="menu-grid">';
-            html += groupedMenu[cat].map(generateMenuItemHTML).join('');
+            html += groupedMenu[cat].map(item => generateMenuItemHTML(item, cart)).join('');
             html += '</div>';
         }
     });
 
     container.innerHTML = html || '<p class="empty-cart" style="text-align: center; padding: 2rem;">No items match your filters.</p>';
+}
+
+function handleMenuInteraction(event) {
+    const target = event.target;
+    const card = target.closest('.menu-card');
+    if (!card) return;
+
+    const action = target.dataset.action;
+    if (!action) return;
+
+    const itemName = card.dataset.name;
+    const itemPrice = parseFloat(card.dataset.price);
+    
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        showSystemToast('Info', 'Please login to add items to your cart.');
+        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+        return;
+    }
+
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let itemInCart = cart.find(i => i.name === itemName);
+    let itemIndex = cart.findIndex(i => i.name === itemName);
+
+    if (action === 'add') {
+        if (!itemInCart) {
+            cart.push({ name: itemName, price: itemPrice, quantity: 1 });
+        }
+    } else if (action === 'increase') {
+        if (itemInCart) {
+            itemInCart.quantity++;
+        }
+    } else if (action === 'decrease') {
+        if (itemInCart) {
+            itemInCart.quantity--;
+            if (itemInCart.quantity <= 0) {
+                cart.splice(itemIndex, 1);
+            }
+        }
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+    
+    updateCardActionControl(card, cart);
+
+    updateCartCount();
+    showStickyCart();
+
+    if (action === 'add') {
+        showToast(itemName, itemPrice);
+        const cartIcon = document.querySelector('.nav-cart-icon');
+        if (cartIcon) {
+            cartIcon.classList.remove('cart-bump');
+            void cartIcon.offsetWidth;
+            cartIcon.classList.add('cart-bump');
+        }
+    }
+}
+
+function updateCardActionControl(cardElement, cart) {
+    const itemName = cardElement.dataset.name;
+    const actionContainer = cardElement.querySelector('.card-action-control');
+    if (!actionContainer) return;
+    
+    const cartItem = cart.find(i => i.name === itemName);
+    const quantity = cartItem ? cartItem.quantity : 0;
+
+    let newHTML;
+    if (quantity > 0) {
+        newHTML = `
+            <div class="qty-stepper">
+                <button data-action="decrease">-</button>
+                <span>${quantity}</span>
+                <button data-action="increase">+</button>
+            </div>`;
+    } else {
+        newHTML = `<button class="btn-order" data-action="add">＋ Add</button>`;
+    }
+    actionContainer.innerHTML = newHTML;
 }
 
 function updateCartCount() {
@@ -1071,6 +1153,7 @@ async function loadMyOrders() {
         if (activeContainer) {
             if (activeOrders.length > 0) {
                 activeContainer.innerHTML = generateActiveOrderHTML(activeOrders[0]);
+
             } else {
                 activeContainer.innerHTML = '';
             }
@@ -2382,12 +2465,13 @@ function repeatLastOrder() {
 }
 
 function handleLogout() {
-    if (confirm("Are you sure you want to log out?")) {
-        localStorage.removeItem('loggedInUser');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('cart'); // Clear cart on logout
+    localStorage.removeItem('loggedInUser');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('cart'); // Clear cart on logout
+    showSystemToast('Success', 'You have been successfully logged out.');
+    setTimeout(() => {
         window.location.href = 'index.html';
-    }
+    }, 1000);
 }
 
 function showEditProfileModal() {
