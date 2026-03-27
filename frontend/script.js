@@ -1721,7 +1721,7 @@ async function initializePaymentPage() {
 
     // --- Trust Check for COD ---
     const token = localStorage.getItem('authToken');
-    const codRadio = document.querySelector('input[value="cod"]');
+    const codRadio = document.querySelector('input[value="cod"], input[value="COD"]');
     if (codRadio) {
         if (!token) {
             codRadio.disabled = true;
@@ -1737,10 +1737,10 @@ async function initializePaymentPage() {
                 .then(r => r.json())
                 .then(data => {
                     if (data.success && !data.user.isTrusted) {
-                        const currentCodRadio = document.querySelector('input[value="cod"]');
+                        const currentCodRadio = document.querySelector('input[value="cod"], input[value="COD"]');
                         if (currentCodRadio) {
                             currentCodRadio.disabled = true;
-                            const onlineRadio = document.querySelector('input[value="online"]');
+                            const onlineRadio = document.querySelector('input[value="online"], input[value="Online"]');
                             if (onlineRadio && currentCodRadio.checked) {
                                 onlineRadio.checked = true;
                             }
@@ -1941,7 +1941,7 @@ async function processCheckout(event, savedContactStr) {
     event.preventDefault();
     const customerName = document.getElementById('card-name').value;
     const guestContact = document.getElementById('guest-contact')?.value || '';
-    const payMethod = document.querySelector('input[name="pay_method"]:checked')?.value || 'online';
+    const payMethod = (document.querySelector('input[name="pay_method"]:checked')?.value || 'online').toLowerCase();
     
     const flat = document.getElementById('address-flat')?.value.trim() || '';
     const area = document.getElementById('address-area')?.value.trim() || '';
