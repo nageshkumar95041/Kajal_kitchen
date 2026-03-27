@@ -1701,6 +1701,7 @@ async function initializePaymentPage() {
     if (guestContactSection && guestContactInput) {
         if (loggedInUser) {
             guestContactSection.style.display = 'none'; // Hide the entire section
+            guestContactInput.required = false; // Remove required attribute so the form can submit
         } else {
             // Ensure guest contact is required for guests if the section is visible
             guestContactInput.required = true;
@@ -1712,15 +1713,9 @@ async function initializePaymentPage() {
         if (customerContact) {
             const savedAddr = JSON.parse(localStorage.getItem(`savedDeliveryAddress_${customerContact}`));
             if (savedAddr) {
-                const fullAddressInput = document.getElementById('address-full');
-                if (fullAddressInput) {
-                    // Reconstruct address from old or new format for backward compatibility
-                    if (savedAddr.full) {
-                        fullAddressInput.value = savedAddr.full;
-                    } else {
-                        fullAddressInput.value = [savedAddr.flat, savedAddr.area, savedAddr.landmark].filter(Boolean).join(', ');
-                    }
-                }
+                if (document.getElementById('address-flat')) document.getElementById('address-flat').value = savedAddr.flat || '';
+                if (document.getElementById('address-area')) document.getElementById('address-area').value = savedAddr.area || '';
+                if (document.getElementById('address-landmark')) document.getElementById('address-landmark').value = savedAddr.landmark || '';
                 if (document.getElementById('address-city')) document.getElementById('address-city').value = savedAddr.city || '';
                 if (document.getElementById('address-pincode')) document.getElementById('address-pincode').value = savedAddr.pincode || '';
             }
@@ -1936,18 +1931,19 @@ function initLocationPickerMap() {
             const addr = data.address || {};
             const city = addr.city || addr.town || addr.village || addr.county || addr.state_district || '';
             const pincode = addr.postcode || '';
-            const road = addr.road || '';
-            const neighbourhood = addr.neighbourhood || addr.suburb || '';
+            const area = addr.suburb || addr.neighbourhood || addr.residential || addr.road || data.name || '';
             const house = addr.house_number || addr.building || '';
-            const fullAddress = [house, road, neighbourhood].filter(Boolean).join(', ');
             
             const cityInput = document.getElementById('address-city');
             const pincodeInput = document.getElementById('address-pincode');
-            const fullAddressInput = document.getElementById('address-full');
+            const areaInput = document.getElementById('address-area');
+            const flatInput = document.getElementById('address-flat');
             
             if (cityInput) cityInput.value = city;
             if (pincodeInput) pincodeInput.value = pincode;
-            if (fullAddressInput) fullAddressInput.value = fullAddress || `GPS: ${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`;
+            if (areaInput) areaInput.value = area;
+            if (flatInput && house) flatInput.value = house;
+            else if (flatInput && !flatInput.value) flatInput.value = "GPS: " + pos.lat.toFixed(4) + ", " + pos.lng.toFixed(4);
             
             if (locateBtn) {
                 locateBtn.innerText = '📍 Map Located';
@@ -1966,7 +1962,9 @@ async function processCheckout(event, savedContactStr) {
     const guestContact = document.getElementById('guest-contact')?.value || '';
     const payMethod = (document.querySelector('input[name="pay_method"]:checked')?.value || 'online').toLowerCase();
     
-    const fullAddress = document.getElementById('address-full')?.value.trim() || '';
+    const flat = document.getElementById('address-flat')?.value.trim() || '';
+    const area = document.getElementById('address-area')?.value.trim() || '';
+    const landmark = document.getElementById('address-landmark')?.value.trim() || '';
     const city = document.getElementById('address-city')?.value.trim() || '';
     const pincode = document.getElementById('address-pincode')?.value.trim() || '';
     
@@ -1974,24 +1972,25 @@ async function processCheckout(event, savedContactStr) {
         document.getElementById('payment-message').textContent = 'Please tell us your name.';
         return;
     }
-
     // Only validate guest contact if the user is not logged in
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!loggedInUser && !guestContact) {
         document.getElementById('payment-message').textContent = 'Please provide your contact information to proceed.';
         return;
     }
-    if (!fullAddress || !city || !pincode) {
+    if (!flat || !area || !city || !pincode) {
         document.getElementById('payment-message').textContent = 'Please complete all required delivery address fields!';
         return;
     }
     
     // Seamlessly save this successful address so it auto-fills next time they checkout
     if (savedContactStr) {
-        localStorage.setItem(`savedDeliveryAddress_${savedContactStr}`, JSON.stringify({ full: fullAddress, city, pincode }));
+        localStorage.setItem(`savedDeliveryAddress_${savedContactStr}`, JSON.stringify({ flat, area, landmark, city, pincode }));
     }
     
-    let deliveryAddress = `${fullAddress}, ${city} - ${pincode}`;
+    let deliveryAddress = `${flat}, ${area}`;
+    if (landmark) deliveryAddress += `, Landmark: ${landmark}`;
+    deliveryAddress += `, ${city} - ${pincode}`;
 
     const submitBtn = document.getElementById('submit-payment-btn');
     const originalText = submitBtn.innerText;
