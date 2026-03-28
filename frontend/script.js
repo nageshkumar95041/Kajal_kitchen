@@ -15,6 +15,18 @@ function escapeHTML(str) {
     }[tag] || tag));
 }
 
+function isTokenExpired(token) {
+    if (!token) return true;
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(atob(base64));
+        return Math.floor(Date.now() / 1000) >= payload.exp;
+    } catch (e) {
+        return true;
+    }
+}
+
 function getDefaultImage(itemName) {
     if (!itemName) return 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80';
     if (itemName.includes('Halwa') || itemName.includes('Dessert')) return 'https://images.unsplash.com/photo-1563805042-7684c8e9e9cb?auto=format&fit=crop&w=400&q=80';
@@ -44,6 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         navLinks.addEventListener('click', (e) => {
             if(e.target.tagName === 'A') {
+                navLinks.classList.remove('active');
+                navbar.classList.remove('menu-open');
+            }
+        });
+
+        // Close mobile menu when clicking anywhere outside the navbar
+        document.addEventListener('click', (e) => {
+            if (navbar.classList.contains('menu-open') && !navbar.contains(e.target)) {
                 navLinks.classList.remove('active');
                 navbar.classList.remove('menu-open');
             }
@@ -438,8 +458,10 @@ function handleMenuInteraction(event) {
     const itemPrice = parseFloat(card.dataset.price);
     
     const token = localStorage.getItem('authToken');
-    if (!token) {
-        showSystemToast('Info', 'Please login to add items to your cart.');
+    if (!token || isTokenExpired(token)) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('loggedInUser');
+        showSystemToast('Info', 'Your session has expired or you are not logged in. Please login to continue.');
         setTimeout(() => { window.location.href = 'login.html'; }, 2000);
         return;
     }
@@ -714,6 +736,15 @@ function updatePasswordStrength(password) {
 }
 
 function checkoutCart() {
+    const token = localStorage.getItem('authToken');
+    if (!token || isTokenExpired(token)) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('loggedInUser');
+        showSystemToast('Error', 'Session expired. Please login again to checkout.', 'error');
+        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+        return;
+    }
+
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     if (cart.length === 0) {
         showSystemToast('Info', 'Your cart is empty!');
