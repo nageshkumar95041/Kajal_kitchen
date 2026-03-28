@@ -265,17 +265,47 @@ function showStickyCart() {
     let sticky = document.getElementById('sticky-cart');
     if (!sticky) return;
     const token = localStorage.getItem('authToken');
-    
+
     if (cart.length > 0 && token) {
-        let count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        let total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+        const itemCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        const currentTotal = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+
+        // Mock original price and discount for demonstration, as this data isn't in the backend.
+        const discountPercentage = 17;
+        const originalTotal = Math.round(currentTotal / (1 - (discountPercentage / 100)));
+        const hasDiscount = originalTotal > currentTotal + 1; // Only show if discount is meaningful
+
+        // Dynamic delivery nudge logic
+        const freeDeliveryThreshold = 299;
+        let deliveryNudgeHTML = '';
+        if (currentTotal < freeDeliveryThreshold) {
+            const amountNeeded = freeDeliveryThreshold - currentTotal;
+            deliveryNudgeHTML = `<p class="sc-delivery-nudge">Add ₹${amountNeeded} more for free delivery</p>`;
+        } else {
+            deliveryNudgeHTML = `<p class="sc-delivery-nudge" style="color: #16a34a;">You've unlocked Free Delivery!</p>`;
+        }
+
         sticky.innerHTML = `
-            <div style="display:flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto;">
-                <span style="font-size: 1.1rem; font-weight: bold;">🛒 ${count} items | ₹${total}</span>
-                <button onclick="window.location.href='cart.html'" class="btn" style="padding: 8px 20px; font-size: 1rem; background: #2ecc71; color: white;">View Cart &rarr;</button>
+            <div class="sc-left">
+                <div class="sc-icon-pill">
+                    🛒
+                    <span class="sc-item-count">${itemCount}</span>
+                </div>
+                <div class="sc-details">
+                    <p class="sc-info-label">${itemCount} item${itemCount > 1 ? 's' : ''} in cart</p>
+                    <div class="sc-price-row">
+                        <span class="sc-price-current">₹${currentTotal}</span>
+                        ${hasDiscount ? `<s class="sc-price-original">₹${originalTotal}</s>` : ''}
+                        ${hasDiscount ? `<span class="sc-discount-badge">${discountPercentage}% OFF</span>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="sc-right">
+                <a href="cart.html" class="sc-cta-btn">View Cart →</a>
+                ${deliveryNudgeHTML}
             </div>
         `;
-        sticky.style.display = 'block';
+        sticky.style.display = 'flex';
     } else {
         sticky.style.display = 'none';
     }
@@ -628,15 +658,22 @@ function showToast(itemName, price) {
         document.body.appendChild(container);
     }
 
+    // Remove redundant price inside parentheses if it exists in the name
+    const cleanItemName = itemName.replace(/\s*\([^)]*\)/g, '');
+
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
     
     toast.innerHTML = `
         <div class="toast-header">
-            <div class="toast-icon">✅</div>
+            <div class="toast-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
             <div class="toast-content">
-                <div class="toast-title">Added to cart</div>
-                <div class="toast-desc">${escapeHTML(itemName)} - ₹${price}</div>
+                <div class="toast-title">Added to cart!</div>
+                <div class="toast-desc">
+                    <strong style="color: #1a0e00;">${escapeHTML(cleanItemName)}</strong><br>
+                    <span style="color: #f97316; font-weight: 600;">₹${price}</span>
+                    <span style="color: #9ca3af; font-size: 12px; margin-left: 8px;">Qty: 1</span>
+                </div>
             </div>
             <button class="toast-close">&times;</button>
         </div>
@@ -659,7 +696,7 @@ function showToast(itemName, price) {
         });
     };
 
-    const timeout = setTimeout(removeToast, 3500);
+    const timeout = setTimeout(removeToast, 4000);
 
     toast.querySelector('.toast-close').addEventListener('click', () => {
         clearTimeout(timeout);
@@ -684,15 +721,15 @@ function showSystemToast(title, message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
     
-    const icon = type === 'success' ? '✅' : '❌';
-    const iconColor = type === 'success' ? '#2ecc71' : '#e74c3c';
-    const progressColor = type === 'success' ? '#E07B2D' : '#e74c3c';
+    const icon = type === 'success' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' : '❌';
+    const iconColor = type === 'success' ? '#f97316' : '#e74c3c';
+    const progressColor = type === 'success' ? '#f97316' : '#e74c3c';
 
     toast.innerHTML = `
         <div class="toast-header">
             <div class="toast-icon" style="color: ${iconColor}">${icon}</div>
             <div class="toast-content">
-                <div class="toast-title">${escapeHTML(title)}</div>
+                <div class="toast-title">${title}</div>
                 <div class="toast-desc">${escapeHTML(message)}</div>
             </div>
             <button class="toast-close">&times;</button>
@@ -708,7 +745,7 @@ function showSystemToast(title, message, type = 'success') {
         toast.classList.add('hiding');
         toast.addEventListener('animationend', () => { if (toast.parentElement) toast.parentElement.removeChild(toast); });
     };
-    const timeout = setTimeout(removeToast, 3500);
+    const timeout = setTimeout(removeToast, 4000);
     toast.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timeout); removeToast(); });
 }
 
@@ -1217,12 +1254,16 @@ function generateActiveOrderHTML(order) {
     if (order.status === 'Preparing') eta = "20 mins";
     if (order.status === 'Out for Delivery') eta = "10 mins";
 
+    // Mock arrival time for demonstration
+    const arrivalTime = new Date(Date.now() + 35 * 60 * 1000).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+
     return `
         <div class="active-order-card">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
                 <div>
                     <p style="font-size: 0.9rem; color: var(--admin-text-muted); margin-bottom: 0;">Estimated Delivery</p>
                     <p style="font-size: 2.2rem; font-weight: bold; color: #2ecc71; margin-top: 0; line-height: 1;">${eta}</p>
+                    <p style="font-size: 13px; color: #888; margin-top: -5px;">Arrives by ${arrivalTime}</p>
                 </div>
                 <div class="hygiene-badge">✨ Max Safety & Hygiene</div>
             </div>
@@ -1238,7 +1279,20 @@ function generateActiveOrderHTML(order) {
                 }).join('')}
             </div>
 
-            <div style="margin-top: 3.5rem; background: var(--admin-bg); padding: 1rem; border-radius: 10px;">
+            <div style="margin-top: 2.5rem; background: var(--admin-bg); padding: 1rem; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #fff7ed; color: #c2410c; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">R</div>
+                    <div>
+                        <p style="font-weight: bold; color: var(--admin-text-main); margin: 0;">Ravi Kumar</p>
+                        <p style="font-size: 0.85rem; color: var(--admin-text-muted); margin: 0;">Your delivery partner</p>
+                    </div>
+                </div>
+                <a href="tel:+919876543210" style="width: 40px; height: 40px; border-radius: 50%; background: #f97316; color: white; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5h-1.528a13.5 13.5 0 01-11.472-11.472H2A1.5 1.5 0 012 3.5z" clip-rule="evenodd"></path></svg>
+                </a>
+            </div>
+
+            <div style="margin-top: 1.5rem; background: var(--admin-bg); padding: 1rem; border-radius: 10px;">
                 <div style="display: flex; justify-content: space-between;">
                     <p><strong>Order #${safeId.toString().slice(-5)}</strong></p>
                     <button class="btn-edit-profile" style="position: static;" onclick="viewReceipt('${safeId}')">Details</button>
@@ -1249,38 +1303,66 @@ function generateActiveOrderHTML(order) {
 
             <div class="order-actions-row">
                 ${order.status === 'Pending' ? `<button class="btn-outline" style="color: #e74c3c; border-color: #e74c3c;" onclick="cancelOrder('${safeId}')">Cancel Order</button>` : ''}
-                <button class="btn-outline" onclick="showSystemToast('Support', 'Please call us at: +91 7366952957')">📞 Call Support</button>
+                <button class="btn-outline" onclick="showSystemToast('Support', 'Please call us at: +91 7366952957')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 16px; height: 16px; margin-right: 6px; vertical-align: middle;">
+                        <path fill-rule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5h-1.528a13.5 13.5 0 01-11.472-11.472H2A1.5 1.5 0 012 3.5z" clip-rule="evenodd"></path>
+                    </svg>
+                    Call Support
+                </button>
                 ${order.status === 'Out for Delivery' ? `<button class="btn" style="padding: 8px 20px;" onclick="trackDelivery('${safeId}')">📍 Track Map</button>` : ''}
             </div>
+            <p style="font-size: 11px; color: #888; text-align: center; margin-top: 8px;">You can cancel within 2 minutes of placing the order.</p>
         </div>
     `;
 }
 
 function generatePastOrderHTML(order) {
+    console.log("Raw order object:", order);
+    
     const safeId = order._id || order.id || '00000';
     const status = order.status || 'Pending';
     const statusClass = status.toLowerCase().replace(/ /g, '-');
-    const isDelivered = status === 'Completed';
+    const isDelivered = status.toLowerCase() === 'completed';
     const items = Array.isArray(order.items) ? order.items : [];
     const itemsSummary = items.map(i => `${i.quantity || 1}x ${escapeHTML(i.name)}`).join(', ');
 
+    const rawDate = order.createdAt || order.date || order.timestamp || order.placedAt;
+    let displayDate = "Date unavailable";
+
+    if (rawDate) {
+      let d;
+      if (rawDate?.toDate) { d = rawDate.toDate(); }
+      else if (typeof rawDate === "number") { d = new Date(rawDate * 1000); }
+      else { d = new Date(rawDate); }
+      
+      if (!isNaN(d)) {
+        displayDate = d.toLocaleDateString("en-IN", {
+          day: "numeric", month: "short", year: "numeric"
+        });
+      }
+    }
+
     return `
-        <div class="order-card" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div class="order-card" style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div style="flex: 1; min-width: 200px;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div style="background: var(--admin-bg); padding: 1rem; border-radius: 10px; font-size: 1.5rem;">🍲</div>
                     <div>
                         <h4 style="margin: 0; color: var(--admin-text-main);">Kajal Ki Rasoi</h4>
-                        <p style="margin: 0; font-size: 0.8rem; color: var(--admin-text-muted);">${new Date(order.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--admin-text-muted);">${displayDate} &bull; Order #KKR${safeId.toString().slice(-5).toUpperCase()}</p>
                         <p style="margin: 0.2rem 0 0 0; font-weight: bold; color: var(--admin-text-main);">₹${order.total} &bull; <span class="status ${statusClass}" style="font-size: 0.75rem;">${status}</span></p>
                     </div>
                 </div>
                 <p style="margin: 0.8rem 0 0 0; font-size: 0.9rem; color: var(--admin-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">${itemsSummary}</p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.5rem; text-align: right;">
-                ${isDelivered ? `<button class="btn" style="padding: 8px 15px;" onclick='reorderItems(${JSON.stringify(items).replace(/'/g, "&#39;")})'>🔁 Reorder</button>` : ''}
+                ${isDelivered ? `<button class="btn" style="padding: 8px 15px; display: inline-flex; align-items: center; justify-content: center;" onclick='reorderItems(${JSON.stringify(items).replace(/'/g, "&#39;")})'>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px; margin-right: 6px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg> Reorder
+                </button>` : ''}
                 <button class="btn-outline" style="padding: 6px 12px; font-size: 0.85rem;" onclick="viewReceipt('${safeId}')">View Details</button>
-                ${isDelivered && !order.rating ? `<button class="btn-outline" style="padding: 6px 12px; font-size: 0.85rem; color: #f39c12; border-color: #f39c12;" onclick="showRatingModal('${safeId}')">⭐ Rate</button>` : ''}
+                ${isDelivered ? `<button class="btn-outline" style="padding: 6px 12px; font-size: 0.85rem; color: #f39c12; border-color: #f39c12;" onclick="showRatingModal('${safeId}')">⭐ Rate</button>` : ''}
             </div>
         </div>
     `;
@@ -2188,7 +2270,8 @@ async function handleLogin(event) {
             localStorage.setItem('loggedInUser', JSON.stringify(data.user));
             localStorage.setItem('authToken', data.token);
             
-            showSystemToast('Success', `Welcome back, ${data.user.name}!`);
+            const capitalizedName = data.user.name.charAt(0).toUpperCase() + data.user.name.slice(1);
+            showSystemToast(`Welcome back, <span style="color: #f97316; font-weight: 500;">${escapeHTML(capitalizedName)}!</span>`, 'Ready to order something delicious?');
             setTimeout(() => {
                 if (data.user.role === 'admin') {
                     window.location.href = 'admin.html';
@@ -2219,7 +2302,8 @@ async function handleGoogleLogin(response) {
             localStorage.setItem('loggedInUser', JSON.stringify(data.user));
             localStorage.setItem('authToken', data.token);
             
-            showSystemToast('Success', `Welcome, ${data.user.name}!`);
+            const capitalizedName = data.user.name.charAt(0).toUpperCase() + data.user.name.slice(1);
+            showSystemToast(`Welcome back, <span style="color: #f97316; font-weight: 500;">${escapeHTML(capitalizedName)}!</span>`, 'Ready to order something delicious?');
             setTimeout(() => { 
                 if (data.user.role === 'admin') {
                     window.location.href = 'admin.html';
@@ -2320,8 +2404,10 @@ function showForgotPasswordModal(event) {
 }
 
 function updateAuthNav() {
-    const loggedInUser = localStorage.getItem('loggedInUser');
+    const loggedInUserStr = localStorage.getItem('loggedInUser');
+    const loggedInUser = loggedInUserStr ? JSON.parse(loggedInUserStr) : null;
     const navLinks = document.querySelector('.nav-links');
+    const navRight = document.querySelector('.nav-right');
     
     if (!navLinks) return;
 
@@ -2329,8 +2415,8 @@ function updateAuthNav() {
     const cartLinks = document.querySelectorAll('a[href="cart.html"]');
     cartLinks.forEach(link => {
         if (loggedInUser) {
-            if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'list-item';
-            else link.style.display = 'inline-block';
+            if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'inline-flex';
+            else link.style.display = 'inline-flex';
         } else {
             if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'none';
             else link.style.display = 'none';
@@ -2345,26 +2431,85 @@ function updateAuthNav() {
         }
     });
 
+    const existingAvatar = document.querySelector('.nav-right > div[data-avatar="true"]');
+    if (existingAvatar) existingAvatar.remove();
+
     if (loggedInUser) {
-        // Add user-specific links
-        const myOrdersLi = document.createElement('li');
-        myOrdersLi.innerHTML = '<a href="my-orders.html">My Orders</a>';
-        navLinks.appendChild(myOrdersLi);
-
-        const profileLi = document.createElement('li');
-        profileLi.innerHTML = '<a href="profile.html">Profile</a>';
-        navLinks.appendChild(profileLi);
-
-        const logoutLi = document.createElement('li');
-        const logoutLink = document.createElement('a');
-        logoutLink.textContent = 'Logout';
-        logoutLink.href = '#';
-        logoutLink.onclick = (e) => {
-            e.preventDefault();
-            handleLogout();
+        // Add avatar circle and dropdown
+        const initial = loggedInUser.name ? loggedInUser.name.charAt(0).toUpperCase() : 'U';
+        
+        const avatarContainer = document.createElement('div');
+        avatarContainer.dataset.avatar = "true";
+        avatarContainer.style.position = 'relative';
+        
+        const avatarCircle = document.createElement('div');
+        avatarCircle.style.width = '30px';
+        avatarCircle.style.height = '30px';
+        avatarCircle.style.borderRadius = '50%';
+        avatarCircle.style.background = '#fff7ed';
+        avatarCircle.style.color = '#c2410c';
+        avatarCircle.style.fontSize = '12px';
+        avatarCircle.style.border = '1.5px solid #fed7aa';
+        avatarCircle.style.display = 'flex';
+        avatarCircle.style.alignItems = 'center';
+        avatarCircle.style.justifyContent = 'center';
+        avatarCircle.style.fontWeight = 'bold';
+        avatarCircle.style.cursor = 'pointer';
+        avatarCircle.innerText = initial;
+        
+        const dropdown = document.createElement('div');
+        dropdown.style.position = 'absolute';
+        dropdown.style.top = '120%';
+        dropdown.style.right = '0';
+        dropdown.style.background = '#fff';
+        dropdown.style.borderRadius = '8px';
+        dropdown.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
+        dropdown.style.padding = '8px 0';
+        dropdown.style.minWidth = '150px';
+        dropdown.style.display = 'none';
+        dropdown.style.flexDirection = 'column';
+        dropdown.style.zIndex = '1001';
+        
+        const createDropLink = (text, href, onClick) => {
+            const a = document.createElement('a');
+            a.innerText = text;
+            a.href = href;
+            a.style.padding = '10px 20px';
+            a.style.color = '#333';
+            a.style.textDecoration = 'none';
+            a.style.fontSize = '14px';
+            a.style.fontFamily = "'DM Sans', sans-serif";
+            a.style.display = 'block';
+            a.onmouseover = () => a.style.background = '#f9f9f9';
+            a.onmouseout = () => a.style.background = 'transparent';
+            if (onClick) {
+                a.onclick = (e) => { e.preventDefault(); onClick(); };
+            }
+            return a;
         };
-        logoutLi.appendChild(logoutLink);
-        navLinks.appendChild(logoutLi);
+        
+        dropdown.appendChild(createDropLink('My Orders', 'my-orders.html'));
+        dropdown.appendChild(createDropLink('Profile', 'profile.html'));
+        dropdown.appendChild(createDropLink('Logout', '#', handleLogout));
+        
+        avatarCircle.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+        };
+        
+        document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+        });
+        
+        avatarContainer.appendChild(avatarCircle);
+        avatarContainer.appendChild(dropdown);
+        
+        const menuToggle = document.getElementById('mobile-menu');
+        if (menuToggle && navRight) {
+            navRight.insertBefore(avatarContainer, menuToggle);
+        } else if (navRight) {
+            navRight.appendChild(avatarContainer);
+        }
     } else {
         // Add guest links
         const loginLi = document.createElement('li');
@@ -2629,6 +2774,15 @@ function showReceiptModal(order) {
     const modalContent = document.createElement('div');
     modalContent.className = 'receipt-modal-content';
 
+    const date = order.timestamp?.toDate?.() 
+        ? order.timestamp.toDate() 
+        : new Date(order.timestamp);
+
+    const formattedDate = isNaN(date) ? 'Date unavailable' : 
+        date.toLocaleDateString('en-IN', { 
+            day: 'numeric', month: 'short', year: 'numeric' 
+        });
+
     const itemsHtml = order.items.map(item => `
         <div class="receipt-item">
             <span>${escapeHTML(item.name)}</span>
@@ -2639,7 +2793,7 @@ function showReceiptModal(order) {
 
     modalContent.innerHTML = `
         <h3>Kajal Ki Rasoi<br><span style="font-size: 0.9rem; font-weight: normal;">Order #${escapeHTML((order._id || order.id).toString().slice(-5))}</span></h3>
-        <p style="font-size: 0.85rem; text-align: center; margin-bottom: 0.5rem;">${new Date(order.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+        <p style="font-size: 0.85rem; text-align: center; margin-bottom: 0.5rem;">${formattedDate}</p>
         <p style="font-size: 0.85rem; text-align: center; margin-bottom: 1.5rem; word-wrap: break-word;"><strong>Deliver to:</strong><br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address || '')}" target="_blank" style="color: #3498db; text-decoration: none;">${displayAddress} 📍</a></p>
         ${itemsHtml}
         <div class="receipt-total">
