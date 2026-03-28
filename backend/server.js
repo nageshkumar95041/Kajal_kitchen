@@ -27,7 +27,7 @@ app.use(helmet({
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://unpkg.com"],
             imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://*.tile.openstreetmap.org", "https://via.placeholder.com"],
-            connectSrc: ["'self'", "ws:", "wss:", "https://accounts.google.com", "https://api.stripe.com", "https://nominatim.openstreetmap.org"],
+            connectSrc: ["'self'", "ws:", "wss:", "https://accounts.google.com", "https://api.stripe.com", "https://nominatim.openstreetmap.org", "https://cdn.socket.io"],
             frameSrc: ["'self'", "https://accounts.google.com", "https://js.stripe.com", "https://hooks.stripe.com"],
         },
     },
@@ -112,6 +112,9 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true }, // In a real app, hash this with bcrypt!
     role: { type: String, default: 'user' },
     isTrusted: { type: Boolean, default: false },
+    isVerified: { type: Boolean, default: true }, // Set to true by default to not lock out old/legacy accounts
+    verificationOtp: { type: String },
+    otpExpires: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date }
 }, { toJSON: { virtuals: true } });
@@ -944,15 +947,34 @@ app.post('/api/register', authLimiter, async (req, res) => {
     }
 
     try {
-        const userExists = await User.findOne({ contact: contact.toLowerCase() });
-        if (userExists) {
-            return res.status(400).json({ success: false, message: 'Account already exists with this email or phone number.' });
+        let user = await User.findOne({ contact: contact.toLowerCase() });
+        if (user) {
+            if (user.isVerified) {
+                return res.status(400).json({ success: false, message: 'Account already exists with this email or phone number.' });
+            }
+        } else {
+            user = new User({ contact: contact.toLowerCase(), role: 'user' });
         }
         
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const hashedPassword = await bcrypt.hash(password, 10);
-        await User.create({ name, contact: contact.toLowerCase(), password: hashedPassword, role: 'user' });
-        res.status(201).json({ success: true, message: 'Account created successfully!' });
+        const hashedOtp = await bcrypt.hash(otp, 10);
+        
+        user.name = name;
+        user.password = hashedPassword;
+        user.isVerified = false;
+        user.verificationOtp = hashedOtp;
+        user.otpExpires = Date.now() + 10 * 60 * 1000; // Expires in 10 minutes
+        await user.save();
+
+        if (contact.includes('@')) {
+            const mailOptions = { from: EMAIL_USER, to: contact, subject: 'Verify your Kajal Ki Rasoi Account', html: `<h3>Welcome ${name}!</h3><p>Your verification code is: <strong style="font-size: 1.5rem; letter-spacing: 0.2rem;">${otp}</strong></p><p>It expires in 10 minutes.</p>` };
+            transporter.sendMail(mailOptions).catch(console.error);
+        } else { console.log(`[MOCK SMS] Verification code for ${contact} is ${otp}`); }
+
+        res.status(201).json({ success: true, message: 'Verification code sent.', requiresVerification: true });
     } catch (error) {
+        console.error('Registration error:', error);
         res.status(500).json({ success: false, message: 'Failed to register.' });
     }
 });
@@ -973,6 +995,20 @@ app.post('/api/login', authLimiter, async (req, res) => {
     try {
         const user = await User.findOne({ contact: contact.toLowerCase() });
         if (user && await bcrypt.compare(password, user.password)) {
+            
+            if (!user.isVerified) {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                user.verificationOtp = await bcrypt.hash(otp, 10);
+                user.otpExpires = Date.now() + 10 * 60 * 1000;
+                await user.save();
+
+                if (user.contact.includes('@')) {
+                    const mailOptions = { from: EMAIL_USER, to: user.contact, subject: 'Verify your Kajal Ki Rasoi Account', html: `<h3>Welcome back!</h3><p>Your new verification code is: <strong style="font-size: 1.5rem; letter-spacing: 0.2rem;">${otp}</strong></p><p>It expires in 10 minutes.</p>` };
+                    transporter.sendMail(mailOptions).catch(console.error);
+                } else { console.log(`[MOCK SMS] New OTP for ${user.contact} is ${otp}`); }
+                return res.status(403).json({ success: false, message: 'Please verify your account. A new code has been sent.', requiresVerification: true });
+            }
+
             const token = jwt.sign({ id: user._id, role: user.role }, SECRET_KEY, { expiresIn: '2h' });
             res.json({ success: true, token, user: { name: user.name, contact: user.contact, role: user.role } });
         } else {
