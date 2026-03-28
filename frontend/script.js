@@ -859,6 +859,9 @@ async function loadAdminDashboardStats() {
     const container = document.getElementById('admin-dashboard-stats');
     if (!container) return;
 
+        // Reset grid class if present so we can stack rows vertically
+        container.classList.remove('dashboard-stats-container');
+
     try {
         const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE_URL}/api/admin/dashboard-stats`, {
@@ -878,59 +881,136 @@ async function loadAdminDashboardStats() {
 
         const totalOrders = orderCounts.reduce((sum, item) => sum + item.count, 0);
 
-        let topItemsHtml = '<ul>';
+            const maxSoldCount = topItems.length > 0 ? topItems[0].count : 1;
+            let topItemsHtml = '<ul style="list-style: none; padding: 0; margin-top: 1rem;">';
         if (topItems.length > 0) {
             topItems.forEach(item => {
-                topItemsHtml += `<li><span>${escapeHTML(item._id)}</span> <strong>${item.count} sold</strong></li>`;
+                    const fillWidth = (item.count / maxSoldCount) * 100;
+                    topItemsHtml += `
+                        <li style="margin-bottom: 12px; border-bottom: none; display: block; padding: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 0.95rem; color: var(--admin-text-main);">${escapeHTML(item._id)}</span>
+                                <strong style="font-size: 0.9rem; color: var(--admin-text-muted);">${item.count} sold</strong>
+                            </div>
+                            <div style="width: 80px; height: 4px; background: #2a2a2a; border-radius: 2px; overflow: hidden;">
+                                <div style="background: #f97316; width: ${fillWidth}%; height: 100%; border-radius: 2px;"></div>
+                            </div>
+                        </li>
+                    `;
             });
         } else {
             topItemsHtml += '<li>No item sales data yet.</li>';
         }
         topItemsHtml += '</ul>';
 
+            const pendingCount = orderCountsMap['Pending'] || 0;
+            const todayStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const todayHtml = `<p style="font-size: 12px; color: #6b7280; margin-top: -10px; margin-bottom: 1.5rem;">${todayStr}</p>`;
+
+            let alertHtml = '';
+            if (pendingCount > 0) {
+                alertHtml = `
+                    <div style="background: #431407; border: 0.5px solid #9a3412; border-radius: 10px; padding: 12px 16px; color: #fb923c; font-size: 13px; margin-bottom: 1.5rem;">
+                        ⚠ ${pendingCount} pending orders waiting for acceptance
+                    </div>
+                `;
+            }
+
+            const quickCardsHtml = `
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 5px;">
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">Today's Revenue</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">₹${revenue.today.toLocaleString('en-IN')}</div>
+                        <div style="font-size: 11px; color: #6b7280;">From completed orders</div>
+                    </div>
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">Total Orders</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">${totalOrders}</div>
+                        <div style="font-size: 11px; color: #22c55e;">${pendingCount} pending now</div>
+                    </div>
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">This Week</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">₹${revenue.week.toLocaleString('en-IN')}</div>
+                        <div style="font-size: 11px; color: #6b7280;">Past 7 days</div>
+                    </div>
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">This Month</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">₹${revenue.month.toLocaleString('en-IN')}</div>
+                        <div style="font-size: 11px; color: #6b7280;">Current month</div>
+                    </div>
+                </div>
+            `;
+
         container.innerHTML = `
-            <div class="stat-card">
-                <h3>Revenue (Completed)</h3>
-                <p class="stat-value">₹${revenue.today.toLocaleString('en-IN')}</p>
-                <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Today</p>
-                <hr style="margin: 10px 0; border-color: var(--admin-border);">
-                <p style="font-size: 1rem;">This Week: <strong>₹${revenue.week.toLocaleString('en-IN')}</strong></p>
-                <p style="font-size: 1rem;">This Month: <strong>₹${revenue.month.toLocaleString('en-IN')}</strong></p>
-            </div>
-            <div class="stat-card">
-                <h3>Orders</h3>
-                <p class="stat-value">${totalOrders}</p>
-                <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Total Orders</p>
-                <ul style="font-size: 0.9rem;">
-                    <li><span>Pending:</span> <strong>${orderCountsMap['Pending'] || 0}</strong></li>
-                    <li><span>Preparing:</span> <strong>${orderCountsMap['Preparing'] || 0}</strong></li>
-                    <li><span>Out for Delivery:</span> <strong>${orderCountsMap['Out for Delivery'] || 0}</strong></li>
-                    <li><span>Completed:</span> <strong>${orderCountsMap['Completed'] || 0}</strong></li>
-                    <li><span>Rejected:</span> <strong>${orderCountsMap['Rejected'] || 0}</strong></li>
-                </ul>
-            </div>
-            <div class="stat-card">
-                <h3>Top Selling Items</h3>
-                ${topItemsHtml}
-            </div>
-        `;
+                ${todayHtml}
+                ${alertHtml}
+                ${quickCardsHtml}
+                <div class="dashboard-stats-container" style="margin-top: 0;">
+                    <div class="stat-card">
+                        <h3>Revenue (Completed)</h3>
+                        <p class="stat-value">₹${revenue.today.toLocaleString('en-IN')}</p>
+                        <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Today</p>
+                        <hr style="margin: 10px 0; border-color: var(--admin-border);">
+                        <p style="font-size: 1rem;">This Week: <strong>₹${revenue.week.toLocaleString('en-IN')}</strong></p>
+                        <p style="font-size: 1rem;">This Month: <strong>₹${revenue.month.toLocaleString('en-IN')}</strong></p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Orders Status</h3>
+                        <p class="stat-value">${totalOrders}</p>
+                        <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Total Orders</p>
+                        <ul style="font-size: 0.9rem;">
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#f97316; display:inline-block;"></span>Pending:</span> <strong>${orderCountsMap['Pending'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#3b82f6; display:inline-block;"></span>Preparing:</span> <strong>${orderCountsMap['Preparing'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#8b5cf6; display:inline-block;"></span>Out for Delivery:</span> <strong>${orderCountsMap['Out for Delivery'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#22c55e; display:inline-block;"></span>Completed:</span> <strong>${orderCountsMap['Completed'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>Rejected:</span> <strong>${orderCountsMap['Rejected'] || 0}</strong></li>
+                        </ul>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Top Selling Items</h3>
+                        ${topItemsHtml}
+                    </div>
+                </div>
+            `;
+
+        const navOrdersLink = document.getElementById('nav-orders');
+        if (navOrdersLink) {
+            let badge = navOrdersLink.querySelector('.sidebar-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'sidebar-badge';
+                navOrdersLink.appendChild(badge);
+            }
+            badge.textContent = pendingCount;
+            badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+        }
     } catch (error) {
         container.innerHTML = '<p style="color:red;">Error connecting to server for stats.</p>';
     }
 }
 
-async function loadAdminOrders() {
+let currentAdminOrderFilter = 'All';
+
+async function loadAdminOrders(filter = currentAdminOrderFilter) {
+    currentAdminOrderFilter = filter;
     const container = document.getElementById('admin-orders-container');
     if (!container) return;
 
-    const statusFilter = document.getElementById('status-filter')?.value;
-    const paymentFilter = document.getElementById('payment-filter')?.value;
-    const dateFilter = document.getElementById('date-filter')?.value;
+    // Apply flex column layout directly to main wrapper
+    container.classList.remove('admin-grid');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '0';
+
+    const oldFilters = document.querySelector('.admin-filters');
+    if (oldFilters) oldFilters.style.display = 'none';
 
     const params = new URLSearchParams();
-    if (statusFilter) params.append('status', statusFilter);
-    if (paymentFilter) params.append('paymentMethod', paymentFilter);
-    if (dateFilter) params.append('date', dateFilter);
+    if (filter === 'Pending') params.append('status', 'Pending');
+    else if (filter === 'Out for Delivery') params.append('status', 'Out for Delivery');
+    else if (filter === 'Delivered') params.append('status', 'Completed');
+    else if (filter === 'COD') params.append('paymentMethod', 'COD');
+    else if (filter === 'Online') params.append('paymentMethod', 'Online');
 
     try {
         const token = localStorage.getItem('authToken');
@@ -946,8 +1026,16 @@ async function loadAdminOrders() {
         
         const orders = await response.json();
         
+        const headerHtml = `
+            <div class="admin-pill-filters">
+                ${['All', 'Pending', 'Out for Delivery', 'Delivered', 'COD', 'Online'].map(f => 
+                    `<button class="filter-pill ${f === currentAdminOrderFilter ? 'active' : ''}" onclick="loadAdminOrders('${f}')">${f}</button>`
+                ).join('')}
+            </div>
+        `;
+
         if (!Array.isArray(orders) || orders.length === 0) {
-            container.innerHTML = '<p class="empty-cart">No pending orders found.</p>';
+            container.innerHTML = headerHtml + '<p class="empty-cart">No matching orders found.</p>';
             return;
         }
 
@@ -956,47 +1044,60 @@ async function loadAdminOrders() {
             const status = order.status || 'Pending';
             const statusClass = status.toLowerCase().replace(/ /g, '-');
             const items = Array.isArray(order.items) ? order.items : [];
-            const itemsList = items.map(i => `<li>${i.quantity || 1}x ${escapeHTML(i.name) || 'Item'}</li>`).join('');
+            const itemsList = items.map(i => `
+                <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: #374151; font-size: 0.95rem;">
+                    <span style="width: 4px; height: 4px; background-color: #f97316; border-radius: 50%; display: inline-block;"></span>
+                    ${i.quantity || 1}x ${escapeHTML(i.name) || 'Item'}
+                </li>
+            `).join('');
             const displayAddress = escapeHTML(order.address || 'N/A').replace(/\n/g, ', ');
             const orderTimestamp = new Date(order.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+            const rawName = order.customerName || 'Guest';
+            const formattedName = rawName.toLowerCase().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '').join(' ');
 
             let actionButtons = '';
             switch (status) {
                 case 'Pending':
                     actionButtons = `
-                        <button class="btn-order" style="padding: 6px 12px; background-color: #2ecc71;" onclick="updateOrderStatus('${safeId}', 'Preparing')">Accept</button>
-                        <button class="btn-order" style="padding: 6px 12px; background-color: #e74c3c;" onclick="updateOrderStatus('${safeId}', 'Rejected')">Reject</button>
+                        <button class="btn-order" style="padding: 6px 16px; background-color: #f97316; color: white; border: none; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Preparing')">Accept</button>
+                        <button class="btn-order" style="padding: 6px 16px; background-color: transparent; color: #dc2626; border: 1px solid #dc2626; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Rejected')">Reject</button>
                     `;
                     break;
                 case 'Preparing':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px; background-color: #3498db;" onclick="updateOrderStatus('${safeId}', 'Out for Delivery')">Dispatch</button>`;
+                    actionButtons = `<button class="btn-order" style="padding: 6px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Out for Delivery')">Dispatch</button>`;
                     break;
                 case 'Out for Delivery':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px;" onclick="updateOrderStatus('${safeId}', 'Completed')">Delivered</button>`;
+                    actionButtons = `<button class="btn-order" style="padding: 6px 16px; background-color: #22c55e; color: white; border: none; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Completed')">Mark Delivered</button>`;
                     break;
                 case 'Completed':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px; background-color: #7f8c8d;" onclick="deleteOrder('${safeId}')">Archive</button>`;
-                    break;
                 case 'Rejected':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px; background-color: #7f8c8d;" onclick="deleteOrder('${safeId}')">Archive</button>`;
+                case 'Cancelled':
+                    actionButtons = `<button class="btn-order" style="padding: 6px 16px; background-color: #6b7280; color: white; border: none; border-radius: 6px;" onclick="deleteOrder('${safeId}')">Archive</button>`;
                     break;
             }
 
             return `
-                <div class="order-card">
+                <div class="order-card status-${statusClass}">
                     <div class="order-header">
-                        <h3>Order #${escapeHTML(safeId.toString().slice(-5))}</h3>
+                        <h3 style="margin:0; color: var(--admin-text-main);">Order #${escapeHTML(safeId.toString().slice(-5))}</h3>
                         <span class="status ${statusClass}">${escapeHTML(status)}</span>
                     </div>
-                    <p><strong>Customer:</strong> ${escapeHTML(order.customerName) || 'Guest'}</p>
-                    <p><strong>Contact:</strong> <a href="tel:${escapeHTML(order.contact || '')}">${escapeHTML(order.contact || 'N/A')}</a></p>
-                    <p><strong>Payment:</strong> ${escapeHTML(order.paymentMethod || 'Online')}</p>
-                    <p><strong>Address:</strong> <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address || '')}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;" title="Click to navigate on Google Maps">${displayAddress} 📍 Navigate</a></p>
-                    <p><strong>Time:</strong> ${orderTimestamp || 'N/A'}</p>
+                    <div style="margin-bottom: 12px; font-size: 0.95rem; color: var(--admin-text-main);">
+                        <p style="margin: 0 0 4px 0;"><strong>Customer:</strong> ${escapeHTML(formattedName)}</p>
+                        <p style="margin: 0 0 4px 0;"><strong>Contact:</strong> <a href="tel:${escapeHTML(order.contact || '')}" style="color: #e67e22; text-decoration: none;">${escapeHTML(order.contact || 'N/A')}</a></p>
+                        <p style="margin: 0 0 4px 0;"><strong>Payment:</strong> <span style="background: var(--admin-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHTML(order.paymentMethod || 'Online')}</span></p>
+                        <p style="margin: 0 0 4px 0;"><strong>Address:</strong> ${displayAddress} <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address || '')}" target="_blank" class="navigate-link" title="Click to navigate on Google Maps">📍 Navigate</a></p>
+                    </div>
                     ${order.rating ? `<p style="color: #f39c12; margin: 0.5rem 0;"><strong>Rating:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} <br><span style="color: #555; font-size: 0.9rem; font-style: italic;">"${escapeHTML(order.review || '')}"</span></p>` : ''}
-                    <ul class="order-items-list">${itemsList}</ul>
-                    <div class="order-footer">
-                        <strong>Total: ₹${Number(order.total) || 0}</strong>
+                    <ul class="order-items-list" style="background: #f9fafb; border-radius: 8px; padding: 8px 10px; list-style: none; margin: 1rem 0;">
+                        ${itemsList}
+                    </ul>
+                    <div class="order-footer" style="border-top: 0.5px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; margin-top: 1rem;">
+                        <div class="footer-left" style="display: flex; flex-direction: column; gap: 4px;">
+                            <strong style="font-size: 1.1rem; color: var(--admin-text-main);">Total: ₹${Number(order.total) || 0}</strong>
+                            <span style="font-size: 0.85rem; color: #6b7280;">${orderTimestamp || 'N/A'}</span>
+                        </div>
                         <div class="order-actions">
                             ${actionButtons}
                         </div>
@@ -1005,19 +1106,34 @@ async function loadAdminOrders() {
             `;
         }).join('');
         
-        container.innerHTML = ordersHtml;
+        container.innerHTML = headerHtml + `<div class="admin-grid">${ordersHtml}</div>`;
     } catch (error) {
         showSystemToast('Error', 'Error connecting to the backend server.', 'error');
     }
 }
 
-async function loadAdminSubscriptions() {
+let currentAdminSubFilter = 'All';
+
+async function loadAdminSubscriptions(filter = currentAdminSubFilter) {
+    currentAdminSubFilter = filter;
     const container = document.getElementById('admin-subscriptions-container');
     if (!container) return;
 
-    const statusFilter = document.getElementById('sub-status-filter')?.value;
+    // Apply flex column layout directly to main wrapper to prevent grid sharing
+    container.classList.remove('admin-grid');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '16px';
+    container.style.width = '100%';
+
+    // Hide old dropdown if it exists
+    const oldDropdown = document.getElementById('sub-status-filter');
+    if (oldDropdown && oldDropdown.parentElement) {
+        oldDropdown.parentElement.style.display = 'none';
+    }
+
     let url = `${API_BASE_URL}/api/admin/subscriptions`;
-    if (statusFilter) url += `?status=${statusFilter}`;
+    if (filter !== 'All') url += `?status=${filter}`;
 
     try {
         const token = localStorage.getItem('authToken');
@@ -1026,48 +1142,92 @@ async function loadAdminSubscriptions() {
         });
         const data = await response.json();
 
+        const filterHtml = `
+            <div class="admin-pill-filters" style="margin-bottom: 14px; padding: 0;">
+                ${['All', 'Active', 'Pending', 'Cancelled'].map(f => 
+                    `<button class="filter-pill ${f === currentAdminSubFilter ? 'active' : ''}" onclick="loadAdminSubscriptions('${f}')" style="${f !== currentAdminSubFilter ? 'background: #1e1e1e; color: #9ca3af; border: 0.5px solid #444;' : ''}">${f}</button>`
+                ).join('')}
+            </div>
+        `;
+
         if (!data.success || !data.subscriptions || data.subscriptions.length === 0) {
-            container.innerHTML = '<p class="empty-cart">No subscriptions found.</p>';
+            container.innerHTML = filterHtml + '<p class="empty-cart">No matching subscriptions found.</p>';
             return;
         }
 
-        container.innerHTML = data.subscriptions.map(sub => {
-            const statusClass = sub.status === 'Active' ? 'completed' : (sub.status === 'Cancelled' ? 'rejected' : 'pending');
+        const subsHtml = data.subscriptions.map(sub => {
             const displayAddress = escapeHTML(sub.address || 'N/A').replace(/\n/g, ', ');
             const startDate = new Date(sub.startDate).toLocaleDateString('en-IN', { dateStyle: 'medium' });
             const freqText = sub.frequency === 7 && sub.plan.includes('Trial') ? '7-Day Trial' : `${sub.frequency} Days/Week`;
             
+            let borderTopColor = '#2a2a2a';
+            let badgeStyle = '';
+            if (sub.status === 'Active') {
+                borderTopColor = '#22c55e';
+                badgeStyle = 'background: #052e16 !important; color: #4ade80 !important; border: 0.5px solid #166534; border-radius: 20px;';
+            } else if (sub.status === 'Pending') {
+                borderTopColor = '#f97316';
+                badgeStyle = 'background: #431407 !important; color: #fb923c !important; border-radius: 20px; border: 0.5px solid #9a3412;';
+            } else if (sub.status === 'Cancelled') {
+                borderTopColor = '#dc2626';
+                badgeStyle = 'background: #3b0a0a !important; color: #f87171 !important; border-radius: 20px; border: 0.5px solid #991b1b;';
+            }
+
+            let daysText = '';
+            if (sub.status === 'Pending') {
+                daysText = '<div style="font-size: 11px; color: #6b7280; margin-top: 2px;">Awaiting confirmation</div>';
+            } else {
+                const duration = (sub.frequency === 7 && sub.plan.includes('Trial')) ? 7 : 30;
+                const endDate = new Date(sub.startDate);
+                endDate.setDate(endDate.getDate() + duration);
+                const daysLeft = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
+                daysText = `<div style="font-size: 11px; color: #6b7280; margin-top: 2px;">${Math.max(0, daysLeft)} days remaining</div>`;
+            }
+
             let actions = '';
             if (sub.status === 'Pending') {
                 actions = `
-                    <button class="btn-order" style="padding: 6px 12px; background-color: #2ecc71;" onclick="updateSubscriptionStatus('${sub._id}', 'Active')">Mark Active</button>
-                    <button class="btn-order" style="padding: 6px 12px; background-color: #e74c3c;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel</button>
+                    <button class="btn-order" style="padding: 8px 16px; background: #052e16; color: #4ade80; border: 0.5px solid #166534; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Active')">Activate</button>
+                    <button class="btn-order" style="padding: 8px 16px; background: #3b0a0a; color: #f87171; border: 0.5px solid #991b1b; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel</button>
+                    <button class="btn-order" style="background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 8px; padding: 8px 16px; font-size: 12px; text-transform: none; white-space: nowrap; width: auto; min-width: fit-content;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel</button>
                 `;
             } else if (sub.status === 'Active') {
-                actions = `<button class="btn-order" style="padding: 6px 12px; background-color: #e74c3c;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel Sub</button>`;
+                actions = `<button class="btn-order" style="padding: 8px 16px; background: #3b0a0a; color: #f87171; border: 0.5px solid #991b1b; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel Sub</button>`;
+                actions = `<button class="btn-order" style="background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 8px; padding: 8px 16px; font-size: 12px; text-transform: none; white-space: nowrap; width: auto; min-width: fit-content;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel Sub</button>`;
             }
 
             return `
-                <div class="order-card">
-                    <div class="order-header">
-                        <h3 style="color: #2c3e50;">${escapeHTML(sub.plan)}</h3>
-                        <span class="status ${statusClass}">${escapeHTML(sub.status)}</span>
+                <div class="order-card" style="background: #1a1a1a; border-radius: 12px; border: 0.5px solid #2a2a2a; border-top: 3px solid ${borderTopColor}; margin-bottom: 0; min-width: 320px; width: 100%; padding: 16px 18px; box-sizing: border-box;">
+                    <div class="order-header" style="border-bottom: 1px solid #2a2a2a; padding-bottom: 10px; margin-bottom: 10px;">
+                        <div style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 10px;">
+                            <h3 style="color: #fff; margin: 0; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(sub.plan)}</h3>
+                            ${daysText}
+                        </div>
+                        <span class="status" style="${badgeStyle} padding: 4px 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;">${escapeHTML(sub.status)}</span>
                     </div>
-                    <p><strong>Customer:</strong> ${escapeHTML(sub.customerName)}</p>
-                    <p><strong>Contact:</strong> <a href="tel:${escapeHTML(sub.contact)}">${escapeHTML(sub.contact)}</a></p>
-                    <p><strong>Address:</strong> <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sub.address || '')}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;">${displayAddress} 📍</a></p>
-                    <div style="background: var(--admin-bg); padding: 10px; border-radius: 5px; margin: 10px 0;">
-                        <p style="margin: 0; font-size: 0.9rem;"><strong>Plan Details:</strong> ${freqText} &bull; ${sub.persons === 2 ? '2 People' : '1 Person'}</p>
-                        ${sub.couponCode ? `<p style="margin: 0; font-size: 0.9rem;"><strong>Coupon:</strong> <span style="color: #27ae60; font-weight: bold;">${escapeHTML(sub.couponCode)}</span></p>` : ''}
-                        <p style="margin: 0; font-size: 0.9rem;"><strong>Start Date:</strong> <span style="color: #27ae60; font-weight: bold;">${startDate}</span></p>
+                    <div style="font-size: 0.9rem; color: #d1d5db; margin-bottom: 10px;">
+                        <p style="margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>Customer:</strong> <span style="text-transform: capitalize;">${escapeHTML(sub.customerName)}</span></p>
+                        <p style="margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>Contact:</strong> <a href="tel:${escapeHTML(sub.contact)}" style="color: #60a5fa; text-decoration: none;">${escapeHTML(sub.contact)}</a></p>
+                        <p style="margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>Address:</strong> <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sub.address || '')}" target="_blank" class="navigate-link" title="Click to navigate on Google Maps">${displayAddress} 📍</a></p>
                     </div>
-                    <div class="order-footer">
-                        <strong style="color: #e67e22; font-size: 1.1rem;">₹${sub.price}</strong>
-                        <div class="order-actions">${actions}</div>
+                    <div style="background: #2a2a2a; padding: 10px 14px; border-radius: 5px; margin: 10px 0; border: 0.5px solid #333; width: 100%; box-sizing: border-box;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>Plan Details:</strong> ${freqText} &bull; ${sub.persons === 2 ? '2 People' : '1 Person'}</p>
+                        ${sub.couponCode ? `<p style="margin: 0; font-size: 0.85rem; color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>Coupon:</strong> <span style="color: #4ade80; font-weight: bold;">${escapeHTML(sub.couponCode)}</span></p>` : ''}
+                        <p style="margin: 0; font-size: 0.85rem; color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>Start Date:</strong> <span style="color: #4ade80; font-weight: bold;">${startDate}</span></p>
+                    </div>
+                    <div class="order-footer" style="border-top: 0.5px solid #2a2a2a !important; padding-top: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; flex-direction: column;">
+                            <strong style="color: #e67e22; font-size: 1.1rem; line-height: 1; white-space: nowrap;">₹${sub.price}</strong>
+                            <span style="font-size: 11px; color: #6b7280; margin-top: 4px; white-space: nowrap;">per month</span>
+                        </div>
+                        <div class="order-actions" style="display: flex; gap: 6px;">${actions}</div>
                     </div>
                 </div>
             `;
         }).join('');
+
+        container.innerHTML = filterHtml + `<div style="display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 14px; width: 100%;">${subsHtml}</div>`;
+        container.innerHTML = filterHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; width: 100%;">${subsHtml}</div>`;
     } catch (error) {
         container.innerHTML = '<p class="empty-cart" style="color:red;">Error fetching subscriptions.</p>';
     }
@@ -1101,6 +1261,8 @@ async function updateSubscriptionStatus(id, status) {
     } catch (error) { showSystemToast('Error', 'Failed to update subscription status.', 'error'); }
 }
 
+let allAdminCustomers = [];
+
 async function loadAdminCustomers() {
     const container = document.getElementById('admin-customers-container');
     if (!container) return;
@@ -1115,29 +1277,77 @@ async function loadAdminCustomers() {
             return;
         }
 
-        let html = '<div style="overflow-x: auto;"><table style="width:100%; border-collapse: collapse; background: var(--admin-card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 5px; overflow: hidden; min-width: 600px;">';
-        html += '<tr style="background: var(--admin-sidebar); color: var(--admin-sidebar-text); text-align: left;"><th style="padding: 1rem;">Name</th><th style="padding: 1rem;">Contact</th><th style="padding: 1rem;">Total Orders</th><th style="padding: 1rem;">Total Spent</th><th style="padding: 1rem;">Last Order</th><th style="padding: 1rem;">Actions</th></tr>';
-        
-        data.customers.forEach(cust => {
-            const isRepeat = cust.orderCount > 1;
-            html += `
-                <tr style="border-bottom: 1px solid var(--admin-border);">
-                    <td style="padding: 1rem;">${escapeHTML(cust.name || 'Guest')} ${isRepeat ? '⭐' : ''}</td>
-                    <td style="padding: 1rem;">${escapeHTML(cust._id)}</td>
-                    <td style="padding: 1rem;"><span style="background: #3498db; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.85rem;">${cust.orderCount}</span></td>
-                    <td style="padding: 1rem; font-weight: bold; color: #27ae60;">₹${cust.totalSpent.toLocaleString('en-IN')}</td>
-                    <td style="padding: 1rem; color: var(--admin-text-muted); font-size: 0.9rem;">${new Date(cust.lastOrderDate).toLocaleDateString()}</td>
-                    <td style="padding: 1rem;">
-                        <button class="btn-order" style="padding: 5px 12px; background: #e67e22;" onclick="viewCustomerHistory('${escapeHTML(cust._id)}', '${escapeHTML(cust.name || 'Guest')}')">View History</button>
-                    </td>
-                </tr>
-            `;
-        });
-        html += '</table></div>';
-        container.innerHTML = html;
+        allAdminCustomers = data.customers;
+
+        const searchHtml = `
+            <input type="text" id="customer-search-input" placeholder="Search customers..." style="background: #1e1e1e; border: 0.5px solid #333; border-radius: 8px; padding: 8px 14px; color: white; width: 280px; margin-bottom: 14px;" oninput="filterAdminCustomers()">
+        `;
+
+        container.innerHTML = searchHtml + '<div id="admin-customers-table-container"></div>';
+        renderAdminCustomersTable(allAdminCustomers);
     } catch (error) {
         container.innerHTML = '<p style="color:red;">Error loading customers.</p>';
     }
+}
+
+function filterAdminCustomers() {
+    const term = document.getElementById('customer-search-input')?.value.toLowerCase() || '';
+    const filtered = allAdminCustomers.filter(c => 
+        (c.name || 'Guest').toLowerCase().includes(term) || 
+        (c._id || '').toLowerCase().includes(term)
+    );
+    renderAdminCustomersTable(filtered);
+}
+
+function renderAdminCustomersTable(customers) {
+    const container = document.getElementById('admin-customers-table-container');
+    if (!container) return;
+
+    if (customers.length === 0) {
+        container.innerHTML = '<p class="empty-cart">No customers match your search.</p>';
+        return;
+    }
+
+    const formatName = (name) => {
+        return name.toLowerCase().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '').join(' ');
+    };
+
+    let html = '<div style="overflow-x: auto;"><table style="width:100%; border-collapse: collapse; background: var(--admin-card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 5px; overflow: hidden; min-width: 600px;">';
+    html += '<tr style="background: var(--admin-sidebar); color: var(--admin-sidebar-text); text-align: left;"><th style="padding: 1rem;">Name</th><th style="padding: 1rem;">Contact</th><th style="padding: 1rem;">Total Orders</th><th style="padding: 1rem;">Total Spent</th><th style="padding: 1rem;">Last Order</th><th style="padding: 1rem;">Actions</th></tr>';
+    
+    customers.forEach(cust => {
+        const isRepeat = cust.orderCount > 1;
+        const rawName = cust.name || 'Guest';
+        const formattedName = formatName(rawName);
+        const initials = formattedName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'G';
+        
+        const isDuplicateName = allAdminCustomers.filter(c => (c.name || 'Guest').toLowerCase() === rawName.toLowerCase()).length > 1;
+        const contactLabelHtml = isDuplicateName ? `<div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 2px;">${escapeHTML(cust._id)}</div>` : '';
+        const avatarHtml = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #1e3a5f; color: #60a5fa; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; flex-shrink: 0;">${initials}</div>`;
+
+        html += `
+            <tr style="border-bottom: 1px solid var(--admin-border);">
+                <td style="padding: 1rem;">
+                    <div style="display: flex; align-items: center;">
+                        ${avatarHtml}
+                        <div>
+                            <span style="font-weight: 500;">${escapeHTML(formattedName)} ${isRepeat ? '⭐' : ''}</span>
+                            ${contactLabelHtml}
+                        </div>
+                    </div>
+                </td>
+                <td style="padding: 1rem;">${escapeHTML(cust._id)}</td>
+                <td style="padding: 1rem;"><span style="background: #3498db; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.85rem;">${cust.orderCount}</span></td>
+                <td style="padding: 1rem; font-weight: bold; color: #27ae60;">₹${cust.totalSpent.toLocaleString('en-IN')}</td>
+                <td style="padding: 1rem; color: var(--admin-text-muted); font-size: 0.9rem;">${new Date(cust.lastOrderDate).toLocaleDateString()}</td>
+                <td style="padding: 1rem;">
+                    <button class="btn-order" style="background: #f97316; color: white; border: none; border-radius: 7px; padding: 6px 14px; font-size: 12px; text-transform: none;" onclick="viewCustomerHistory('${escapeHTML(cust._id)}', '${escapeHTML(formattedName)}')">View History</button>
+                </td>
+            </tr>
+        `;
+    });
+    html += '</table></div>';
+    container.innerHTML = html;
 }
 
 async function viewCustomerHistory(contact, name) {
@@ -1404,10 +1614,10 @@ async function loadAdminMenu() {
                         <td style="padding: 1rem;">${escapeHTML(item.name)}</td>
                         <td style="padding: 1rem;">₹${item.price}</td>
                         <td style="padding: 1rem;"><span class="status ${isAvailable ? 'completed' : 'preparing'}">${isAvailable ? 'Available' : 'Sold Out'}</span></td>
-                        <td style="padding: 1rem;">
-                            <button class="btn-order" style="padding: 4px 10px; background-color: ${isAvailable ? '#f39c12' : '#2ecc71'}; margin-right: 5px;" onclick="toggleMenuItemAvailability('${item._id}', ${isAvailable})">${isAvailable ? 'Mark Sold Out' : 'Mark Available'}</button>
-                            <button class="btn-order" style="padding: 4px 10px; background-color: #3498db; margin-right: 5px;" onclick='showMenuModal(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
-                            <button class="btn-order" style="padding: 4px 10px; background-color: #e74c3c;" onclick="deleteMenuItem('${item._id}')">Delete</button>
+                        <td style="padding: 1rem; display: flex; flex-direction: row; align-items: center; gap: 6px; white-space: nowrap;">
+                            <button class="btn-order" style="padding: 6px 12px; background-color: #292524; color: #d4a574; border: 1px solid #78350f; border-radius: 7px; margin-right: 6px; white-space: nowrap; font-size: 12px;" onclick="toggleMenuItemAvailability('${item._id}', ${isAvailable})">${isAvailable ? 'Mark Sold Out' : 'Mark Available'}</button>
+                            <button class="btn-order" style="padding: 6px 14px; background-color: #1e3a5f; color: #60a5fa; border: 1px solid #1d4ed8; border-radius: 7px; margin-right: 6px; white-space: nowrap; font-size: 12px;" onclick='showMenuModal(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
+                            <button class="btn-order" style="padding: 6px 14px; background-color: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 7px; white-space: nowrap; font-size: 12px;" onclick="deleteMenuItem('${item._id}')">Delete</button>
                         </td>
                     </tr>
                 `;
