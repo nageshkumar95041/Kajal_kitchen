@@ -914,23 +914,46 @@ async function loadAdminDashboardStats() {
                 ${topItemsHtml}
             </div>
         `;
+
+        const pendingCount = orderCountsMap['Pending'] || 0;
+        const navOrdersLink = document.getElementById('nav-orders');
+        if (navOrdersLink) {
+            let badge = navOrdersLink.querySelector('.sidebar-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'sidebar-badge';
+                navOrdersLink.appendChild(badge);
+            }
+            badge.textContent = pendingCount;
+            badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+        }
     } catch (error) {
         container.innerHTML = '<p style="color:red;">Error connecting to server for stats.</p>';
     }
 }
 
-async function loadAdminOrders() {
+let currentAdminOrderFilter = 'All';
+
+async function loadAdminOrders(filter = currentAdminOrderFilter) {
+    currentAdminOrderFilter = filter;
     const container = document.getElementById('admin-orders-container');
     if (!container) return;
 
-    const statusFilter = document.getElementById('status-filter')?.value;
-    const paymentFilter = document.getElementById('payment-filter')?.value;
-    const dateFilter = document.getElementById('date-filter')?.value;
+    // Apply flex column layout directly to main wrapper
+    container.classList.remove('admin-grid');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '0';
+
+    const oldFilters = document.querySelector('.admin-filters');
+    if (oldFilters) oldFilters.style.display = 'none';
 
     const params = new URLSearchParams();
-    if (statusFilter) params.append('status', statusFilter);
-    if (paymentFilter) params.append('paymentMethod', paymentFilter);
-    if (dateFilter) params.append('date', dateFilter);
+    if (filter === 'Pending') params.append('status', 'Pending');
+    else if (filter === 'Out for Delivery') params.append('status', 'Out for Delivery');
+    else if (filter === 'Delivered') params.append('status', 'Completed');
+    else if (filter === 'COD') params.append('paymentMethod', 'COD');
+    else if (filter === 'Online') params.append('paymentMethod', 'Online');
 
     try {
         const token = localStorage.getItem('authToken');
@@ -946,8 +969,16 @@ async function loadAdminOrders() {
         
         const orders = await response.json();
         
+        const headerHtml = `
+            <div class="admin-pill-filters">
+                ${['All', 'Pending', 'Out for Delivery', 'Delivered', 'COD', 'Online'].map(f => 
+                    `<button class="filter-pill ${f === currentAdminOrderFilter ? 'active' : ''}" onclick="loadAdminOrders('${f}')">${f}</button>`
+                ).join('')}
+            </div>
+        `;
+
         if (!Array.isArray(orders) || orders.length === 0) {
-            container.innerHTML = '<p class="empty-cart">No pending orders found.</p>';
+            container.innerHTML = headerHtml + '<p class="empty-cart">No matching orders found.</p>';
             return;
         }
 
@@ -956,47 +987,60 @@ async function loadAdminOrders() {
             const status = order.status || 'Pending';
             const statusClass = status.toLowerCase().replace(/ /g, '-');
             const items = Array.isArray(order.items) ? order.items : [];
-            const itemsList = items.map(i => `<li>${i.quantity || 1}x ${escapeHTML(i.name) || 'Item'}</li>`).join('');
+            const itemsList = items.map(i => `
+                <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: #374151; font-size: 0.95rem;">
+                    <span style="width: 4px; height: 4px; background-color: #f97316; border-radius: 50%; display: inline-block;"></span>
+                    ${i.quantity || 1}x ${escapeHTML(i.name) || 'Item'}
+                </li>
+            `).join('');
             const displayAddress = escapeHTML(order.address || 'N/A').replace(/\n/g, ', ');
             const orderTimestamp = new Date(order.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+            const rawName = order.customerName || 'Guest';
+            const formattedName = rawName.toLowerCase().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '').join(' ');
 
             let actionButtons = '';
             switch (status) {
                 case 'Pending':
                     actionButtons = `
-                        <button class="btn-order" style="padding: 6px 12px; background-color: #2ecc71;" onclick="updateOrderStatus('${safeId}', 'Preparing')">Accept</button>
-                        <button class="btn-order" style="padding: 6px 12px; background-color: #e74c3c;" onclick="updateOrderStatus('${safeId}', 'Rejected')">Reject</button>
+                        <button class="btn-order" style="padding: 6px 16px; background-color: #f97316; color: white; border: none; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Preparing')">Accept</button>
+                        <button class="btn-order" style="padding: 6px 16px; background-color: transparent; color: #dc2626; border: 1px solid #dc2626; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Rejected')">Reject</button>
                     `;
                     break;
                 case 'Preparing':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px; background-color: #3498db;" onclick="updateOrderStatus('${safeId}', 'Out for Delivery')">Dispatch</button>`;
+                    actionButtons = `<button class="btn-order" style="padding: 6px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Out for Delivery')">Dispatch</button>`;
                     break;
                 case 'Out for Delivery':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px;" onclick="updateOrderStatus('${safeId}', 'Completed')">Delivered</button>`;
+                    actionButtons = `<button class="btn-order" style="padding: 6px 16px; background-color: #22c55e; color: white; border: none; border-radius: 6px;" onclick="updateOrderStatus('${safeId}', 'Completed')">Mark Delivered</button>`;
                     break;
                 case 'Completed':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px; background-color: #7f8c8d;" onclick="deleteOrder('${safeId}')">Archive</button>`;
-                    break;
                 case 'Rejected':
-                    actionButtons = `<button class="btn-order" style="padding: 6px 12px; background-color: #7f8c8d;" onclick="deleteOrder('${safeId}')">Archive</button>`;
+                case 'Cancelled':
+                    actionButtons = `<button class="btn-order" style="padding: 6px 16px; background-color: #6b7280; color: white; border: none; border-radius: 6px;" onclick="deleteOrder('${safeId}')">Archive</button>`;
                     break;
             }
 
             return `
-                <div class="order-card">
+                <div class="order-card status-${statusClass}">
                     <div class="order-header">
-                        <h3>Order #${escapeHTML(safeId.toString().slice(-5))}</h3>
+                        <h3 style="margin:0; color: var(--admin-text-main);">Order #${escapeHTML(safeId.toString().slice(-5))}</h3>
                         <span class="status ${statusClass}">${escapeHTML(status)}</span>
                     </div>
-                    <p><strong>Customer:</strong> ${escapeHTML(order.customerName) || 'Guest'}</p>
-                    <p><strong>Contact:</strong> <a href="tel:${escapeHTML(order.contact || '')}">${escapeHTML(order.contact || 'N/A')}</a></p>
-                    <p><strong>Payment:</strong> ${escapeHTML(order.paymentMethod || 'Online')}</p>
-                    <p><strong>Address:</strong> <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address || '')}" target="_blank" style="color: #e67e22; text-decoration: none; font-weight: bold;" title="Click to navigate on Google Maps">${displayAddress} 📍 Navigate</a></p>
-                    <p><strong>Time:</strong> ${orderTimestamp || 'N/A'}</p>
+                    <div style="margin-bottom: 12px; font-size: 0.95rem; color: var(--admin-text-main);">
+                        <p style="margin: 0 0 4px 0;"><strong>Customer:</strong> ${escapeHTML(formattedName)}</p>
+                        <p style="margin: 0 0 4px 0;"><strong>Contact:</strong> <a href="tel:${escapeHTML(order.contact || '')}" style="color: #e67e22; text-decoration: none;">${escapeHTML(order.contact || 'N/A')}</a></p>
+                        <p style="margin: 0 0 4px 0;"><strong>Payment:</strong> <span style="background: var(--admin-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHTML(order.paymentMethod || 'Online')}</span></p>
+                        <p style="margin: 0 0 4px 0;"><strong>Address:</strong> ${displayAddress} <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address || '')}" target="_blank" class="navigate-link" title="Click to navigate on Google Maps">📍 Navigate</a></p>
+                    </div>
                     ${order.rating ? `<p style="color: #f39c12; margin: 0.5rem 0;"><strong>Rating:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} <br><span style="color: #555; font-size: 0.9rem; font-style: italic;">"${escapeHTML(order.review || '')}"</span></p>` : ''}
-                    <ul class="order-items-list">${itemsList}</ul>
-                    <div class="order-footer">
-                        <strong>Total: ₹${Number(order.total) || 0}</strong>
+                    <ul class="order-items-list" style="background: #f9fafb; border-radius: 8px; padding: 8px 10px; list-style: none; margin: 1rem 0;">
+                        ${itemsList}
+                    </ul>
+                    <div class="order-footer" style="border-top: 0.5px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; margin-top: 1rem;">
+                        <div class="footer-left" style="display: flex; flex-direction: column; gap: 4px;">
+                            <strong style="font-size: 1.1rem; color: var(--admin-text-main);">Total: ₹${Number(order.total) || 0}</strong>
+                            <span style="font-size: 0.85rem; color: #6b7280;">${orderTimestamp || 'N/A'}</span>
+                        </div>
                         <div class="order-actions">
                             ${actionButtons}
                         </div>
@@ -1005,7 +1049,7 @@ async function loadAdminOrders() {
             `;
         }).join('');
         
-        container.innerHTML = ordersHtml;
+        container.innerHTML = headerHtml + `<div class="admin-grid">${ordersHtml}</div>`;
     } catch (error) {
         showSystemToast('Error', 'Error connecting to the backend server.', 'error');
     }
