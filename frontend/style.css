@@ -823,22 +823,145 @@ html {
     position: fixed;
     bottom: 0;
     left: 0;
-    width: 100%;
-    background: #2c3e50;
-    color: #fff;
-    padding: 15px 5%;
+    right: 0;
+    background: #1a1a1a;
+    padding: 12px 24px;
     z-index: 1000;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    animation: slideUp 0.3s ease-out;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    max-height: 70px;
+    border-radius: 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    animation: slideUpCart 0.4s 0.2s ease-out backwards;
 }
-@keyframes slideUp {
+@keyframes slideUpCart {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
+}
+
+.sc-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.sc-icon-pill {
+    position: relative;
+    background: #2d2d2d;
+    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.sc-item-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #f97316;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #1a1a1a;
+}
+
+.sc-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.sc-info-label {
+    font-size: 11px;
+    color: #9ca3af;
+    font-family: 'DM Sans', sans-serif;
+    margin: 0;
+    line-height: 1;
+}
+
+.sc-price-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sc-price-current {
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.sc-price-original {
+    color: #6b7280;
+    font-size: 12px;
+    text-decoration: line-through;
+    line-height: 1;
+}
+
+.sc-discount-badge {
+    background: #166534;
+    color: #bbf7d0;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.sc-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.sc-cta-btn {
+    background: #f97316;
+    color: white;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 8px 24px;
+    text-decoration: none;
+    font-size: 14px;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+    line-height: 1.2;
+    display: inline-block;
+    border: none;
+}
+
+.sc-cta-btn:hover {
+    opacity: 0.9;
+}
+
+.sc-delivery-nudge {
+    font-size: 11px;
+    color: #6b7280;
+    text-align: right;
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1;
 }
 
 @media (max-width: 1024px) {
     .menu-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+    .hero h1 .italic-line {
+        font-size: 62px;
     }
 }
 @media (max-width: 640px) {
@@ -848,12 +971,16 @@ html {
     }
 }
 
-@media (max-width: 1024px) {
-    .hero h1 .italic-line {
-        font-size: 62px;
+@media (max-width: 480px) {
+    .sticky-cart {
+        padding: 12px 16px;
     }
-    .hero h1 .bold-line {
-        font-size: 56px;
+    .sc-delivery-nudge, .sc-price-original, .sc-discount-badge {
+        display: none; /* Hide non-essential text on tiny screens */
+    }
+    .sc-cta-btn {
+        padding: 8px 16px;
+        font-size: 13px;
     }
 }
 
@@ -1700,17 +1827,18 @@ footer a:hover {
 
 .toast-notification {
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    width: 320px;
-    max-width: calc(100vw - 40px);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    width: 100%;
+    max-width: 300px;
+    padding: 16px;
     overflow: hidden;
     pointer-events: auto;
     animation: slideInRight 0.3s ease-out forwards;
     display: flex;
     flex-direction: column;
     position: relative;
-    border: 1px solid #eee;
+    border: none;
 }
 
 .toast-notification.hiding {
@@ -1718,26 +1846,27 @@ footer a:hover {
 }
 
 @keyframes slideInRight {
-    from { transform: translateX(120%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideOutRight {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(120%); opacity: 0; }
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
 }
 
 .toast-header {
     display: flex;
     align-items: flex-start;
-    padding: 12px 15px 8px;
+    padding: 0;
+    margin-bottom: 12px;
     gap: 10px;
 }
 
 .toast-icon {
     color: #2ecc71;
-    font-size: 1.2rem;
-    margin-top: 2px;
+    font-size: 20px;
+    margin-top: 0;
 }
 
 .toast-content {
@@ -1745,21 +1874,22 @@ footer a:hover {
 }
 
 .toast-title {
-    font-weight: bold;
-    color: #2c3e50;
-    font-size: 0.95rem;
-    margin-bottom: 2px;
+    font-weight: 600;
+    color: #1a0e00;
+    font-size: 15px;
+    margin-bottom: 4px;
 }
 
 .toast-desc {
-    color: #666;
-    font-size: 0.85rem;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.4;
 }
 
 .toast-close {
     background: none;
     border: none;
-    color: #999;
+    color: #9ca3af;
     font-size: 1.2rem;
     cursor: pointer;
     line-height: 1;
@@ -1767,19 +1897,20 @@ footer a:hover {
 }
 
 .toast-close:hover {
-    color: #333;
+    color: #374151;
 }
 
 .toast-actions {
     display: flex;
-    padding: 8px 15px 12px;
-    gap: 10px;
+    padding: 12px 0 0 0;
+    border-top: 0.5px solid #e5e7eb;
+    gap: 8px;
 }
 
 .toast-btn {
-    padding: 8px 12px;
-    border-radius: 5px;
-    font-size: 0.85rem;
+    padding: 10px 0;
+    border-radius: 10px;
+    font-size: 13px;
     font-weight: bold;
     cursor: pointer;
     text-align: center;
@@ -1790,27 +1921,30 @@ footer a:hover {
 }
 
 .toast-btn-primary {
-    background: #E07B2D;
+    background: #f97316;
     color: #fff;
 }
 
 .toast-btn-primary:hover {
-    background: #c96d27;
+    background: #ea580c;
     color: #fff;
 }
 
 .toast-btn-secondary {
     background: transparent;
-    color: #666;
-    border: 1px solid #ccc;
+    color: #374151;
+    border: 1px solid #e5e7eb;
 }
 
 .toast-btn-secondary:hover {
-    background: #f4f6f8;
-    color: #333;
+    background: #f3f4f6;
+    color: #111827;
 }
 
 .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     height: 3px;
     background: #eee;
     width: 100%;
@@ -1818,9 +1952,9 @@ footer a:hover {
 
 .toast-progress-bar {
     height: 100%;
-    background: #E07B2D;
+    background: #f97316;
     width: 100%;
-    animation: progressShrink 3.5s linear forwards;
+    animation: progressShrink 4s linear forwards;
 }
 
 @keyframes progressShrink {
@@ -1839,12 +1973,12 @@ footer a:hover {
         width: 90%;
     }
     @keyframes slideInRight {
-        from { transform: translateY(-120%); opacity: 0; }
+        from { opacity: 0; transform: translateY(-10px); }
         to { transform: translateY(0); opacity: 1; }
     }
     @keyframes slideOutRight {
-        from { transform: translateY(0); opacity: 1; }
-        to { transform: translateY(-120%); opacity: 0; }
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-10px); }
     }
 }
 
@@ -2125,9 +2259,10 @@ body.admin-body {
 .order-card {
     background: var(--admin-card-bg);
     padding: 1.5rem;
-    border-radius: 10px;
+    border-radius: 14px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    border-top: 4px solid #3498db;
+    border-top: 3px solid #f97316;
+    margin-bottom: 14px;
 }
 
 .dashboard-stats-container {
@@ -2646,7 +2781,7 @@ body.admin-body {
 .active-order-card {
     background: var(--admin-card-bg); border-radius: 15px; padding: 2rem;
     box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 2rem;
-    border-top: 5px solid #e67e22; max-width: 800px; margin-left: auto; margin-right: auto;
+    border-top: 3px solid #f97316; max-width: 800px; margin-left: auto; margin-right: auto;
 }
 .progress-track {
     display: flex; justify-content: space-between; position: relative; margin: 3rem 0 2rem;
@@ -2665,7 +2800,8 @@ body.admin-body {
     transition: all 0.3s ease;
 }
 .progress-step.active {
-    border-color: #e67e22; background: #e67e22; font-size: 16px; color: #fff; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);
+    border-color: #e67e22; background: #e67e22; font-size: 16px; color: #fff;
+    animation: pulse 1.5s infinite;
 }
 .progress-step.completed {
     border-color: #2ecc71; background: #2ecc71; font-size: 16px; color: #fff;
@@ -2692,3 +2828,34 @@ body.admin-body {
 }
 .btn-outline:hover { background: var(--admin-bg); }
 .past-orders-section { max-width: 800px; margin: 0 auto; }
+
+@keyframes pulse { 
+    0%,100% { box-shadow:0 0 0 0 rgba(249,115,22,0.3); } 
+    50% { box-shadow:0 0 0 8px rgba(249,115,22,0); } 
+}
+
+/* Cancel Order Button */
+.order-actions-row .btn-outline[style*="color: #e74c3c"] {
+    background: transparent !important;
+    border: 1px solid #fca5a5 !important;
+    color: #dc2626 !important;
+    border-radius: 10px !important;
+}
+.order-actions-row .btn-outline[style*="color: #e74c3c"]:hover {
+    background: #fee2e2 !important;
+}
+
+/* Call Support Button */
+.order-actions-row .btn-outline:not([style*="color: #e74c3c"]) {
+    background: #f97316 !important;
+    color: white !important;
+    border-radius: 10px !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.order-actions-row .btn-outline:not([style*="color: #e74c3c"]):hover {
+    opacity: 0.9;
+    background: #f97316 !important;
+}
