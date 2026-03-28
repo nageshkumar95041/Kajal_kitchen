@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
 * {
     margin: 0;
     padding: 0;
@@ -11,16 +13,19 @@ body {
 }
 
 html {
+    font-size: 16px;
     scroll-behavior: smooth;
 }
 
 /* Navbar */
 #navbar {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     padding: 1.5rem 5%;
-    background-color: transparent;
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-top: 2px solid #E8A84C;
     flex-wrap: wrap;
     position: fixed;
     width: 100%;
@@ -41,9 +46,11 @@ html {
 }
 
 .logo {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #fff;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #fff !important;
     transition: color 0.3s ease;
 }
 
@@ -109,86 +116,191 @@ html {
 .nav-links {
     display: flex;
     list-style: none;
+    gap: 32px;
     margin-left: auto;
-    margin-right: 2rem;
+    margin-right: 3rem;
 }
 
 .nav-links li {
-    margin-left: 2rem;
+    margin-left: 0;
 }
 
 .nav-links a {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    font-weight: 400;
     text-decoration: none;
-    color: #fff;
-    font-weight: 500;
-    transition: color 0.3s;
+    color: rgba(255, 255, 255, 0.72) !important;
+    transition: color 0.2s;
 }
 
 .nav-links a:hover {
-    color: #e67e22 !important;
+    color: #E8A84C !important;
 }
 
 /* Hero Section */
 .hero {
     height: 100vh;
-    background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=1950&q=80') center/cover;
+    background: 
+        linear-gradient(105deg, rgba(8,4,1,0.90) 0%, rgba(15,8,2,0.72) 40%, rgba(8,4,1,0.35) 100%),
+        radial-gradient(ellipse at center, transparent 40%, rgba(5,3,1,0.60) 100%),
+        url('https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=1950&q=80') center/cover;
+    background-attachment: fixed;
     display: flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
+    text-align: left;
     color: #fff;
-    padding: 0 20px;
+    padding: 0 6%;
 }
 
 .hero h1 {
-    font-size: 3.5rem;
-    margin-bottom: 1rem;
-    line-height: 1.2;
+    position: relative;
+    font-family: 'Cormorant Garamond', serif;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.01em;
 }
 
-.hero h1 em {
-    color: #e67e22;
-    font-style: normal;
+.hero h1::before {
+    content: "Homemade · Fresh · Noida NCR";
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #E8A84C;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 14px;
+    animation: fadeUp 0.6s 0.1s ease both;
+}
+
+.hero h1 .italic-line {
+    font-size: 76px;
+    font-weight: 400;
+    font-style: italic;
+    color: #E8A84C;
+    display: block;
+}
+
+.hero h1 .bold-line {
+    font-size: 68px;
+    font-weight: 600;
+    color: #fff;
+    display: block;
 }
 
 .hero-content {
-    max-width: 800px;
+    max-width: 600px;
 }
 
 .hero-cta {
     margin-top: 2rem;
     display: flex;
     gap: 1rem;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
 }
 
-.btn.btn-secondary { background-color: transparent; border: 2px solid #fff; }
-.btn.btn-secondary:hover { background-color: rgba(255,255,255,0.1); }
-
-
 .hero p {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.62);
+    line-height: 1.8;
+    letter-spacing: 0.01em;
+    max-width: 480px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 2.5rem;
+    text-align: left;
 }
 
 .btn {
     display: inline-block;
-    padding: 10px 28px;
-    background-color: #e67e22;
-    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    background: #E8A84C;
+    color: #1a0a00;
+    border: none;
+    padding: 16px 36px;
     text-decoration: none;
-    border-radius: 6px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
 }
 
 .btn:hover {
-    background-color: #d35400;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(232, 168, 76, 0.2);
+}
+
+.btn.btn-secondary { 
+    background: transparent;
+    color: rgba(255,255,255,0.82);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 16px 36px;
+}
+
+.btn.btn-secondary:hover { 
+    background-color: transparent;
+    border-color: rgba(232,168,76,0.5);
+    color: #E8A84C;
+}
+
+/* Trust Stats Bar */
+.hero-stats {
+    display: flex;
+    gap: 28px;
+    margin-top: 28px;
+    animation: fadeUp 0.5s 0.7s ease both;
+}
+
+.stat-item {
+    border-right: 1px solid rgba(255,255,255,0.12);
+    padding-right: 28px;
+}
+
+.stat-item:last-child {
+    border-right: none;
+}
+
+.stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.stat-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-content h1 {
+    opacity: 0;
+    animation: fadeUp 0.7s 0.25s ease both;
+}
+
+.hero-content p {
+    opacity: 0;
+    animation: fadeUp 0.6s 0.4s ease both;
+}
+
+.hero-content .hero-cta {
+    opacity: 0;
+    animation: fadeUp 0.6s 0.55s ease both;
 }
 
 /* Trust Badges Section */
@@ -640,6 +752,15 @@ html {
     to { transform: translateY(0); }
 }
 
+@media (max-width: 1024px) {
+    .hero h1 .italic-line {
+        font-size: 62px;
+    }
+    .hero h1 .bold-line {
+        font-size: 56px;
+    }
+}
+
 /* Footer */
 footer {
     background-color: #2c3e50;
@@ -655,20 +776,32 @@ footer p {
 /* Responsive */
 @media (max-width: 768px) {
     #navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: 1rem 5%;
     }
-    #navbar.scrolled {
-        padding: 0.8rem 5%;
-    }
+    #navbar.scrolled,
     #navbar.menu-open {
-        background-color: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
+        background-color: rgba(10, 6, 2, 0.75) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
+    #navbar.scrolled .logo,
+    #navbar.scrolled .nav-links a,
+    #navbar.scrolled .nav-cart-icon,
+    #navbar.scrolled .menu-toggle,
     #navbar.menu-open .logo,
     #navbar.menu-open .nav-links a,
+    #navbar.menu-open .nav-cart-icon,
     #navbar.menu-open .menu-toggle {
-        color: #333 !important;
+        color: #fff !important;
+    }
+    .logo {
+        flex: 1;
+        font-size: 22px !important;
+        text-align: left;
     }
     .menu-toggle {
         display: block;
@@ -687,7 +820,7 @@ footer p {
         margin-right: 0;
     }
     .nav-links.active {
-        max-height: 400px;
+        max-height: 500px;
         opacity: 1;
         padding-top: 1rem;
         padding-bottom: 0.5rem;
@@ -696,11 +829,35 @@ footer p {
         margin: 0.8rem 0;
         font-size: 1.1rem;
     }
-    .hero h1 {
-        font-size: 2.3rem;
+    .nav-links a {
+        font-size: 18px !important;
+        font-weight: 500;
+    }
+    .hero h1::before {
+        font-size: 12px !important;
+    }
+    .hero h1 .italic-line {
+        font-size: 48px;
+    }
+    .hero h1 .bold-line {
+        font-size: 44px;
     }
     .hero p {
-        font-size: 1rem;
+        font-size: 15px;
+        line-height: 1.75;
+    }
+    .btn {
+        font-size: 12px;
+        padding: 14px 28px;
+    }
+    .btn.btn-secondary {
+        padding: 14px 28px;
+    }
+    .stat-num {
+        font-size: 22px;
+    }
+    .stat-label {
+        font-size: 10px;
     }
     .section-title, .menu-category-title, .about-section h2, .contact-section h2 {
         font-size: 2rem;
