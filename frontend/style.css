@@ -2483,6 +2483,79 @@ body.admin-body {
     align-items: center !important;
 }
 
+/* Admin Menu Page Enhancements */
+.admin-menu-stats-bar {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-stat-card {
+    background: #1a1a1a;
+    border-radius: 10px;
+    border: 0.5px solid #2a2a2a;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.stat-value {
+    font-size: 18px;
+    color: white;
+    font-weight: 500;
+}
+
+.admin-menu-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 1.5rem;
+}
+
+.menu-search-input {
+    width: 100%;
+    background: #1e1e1e;
+    border: 0.5px solid #333;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: white;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+.menu-search-input::placeholder {
+    color: #6b7280;
+}
+
+.veg-indicator-admin {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid #16a34a;
+    background-color: #4ade80;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.admin-menu-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.06em;
+}
+.admin-menu-table tr:hover { background-color: #1a1a1a; }
+.admin-menu-table td { border-bottom: 0.5px solid #1e1e1e; }
+.admin-menu-table tr:last-child td { border-bottom: none; }
+.admin-menu-table .status.completed { background: #052e16 !important; color: #4ade80 !important; border: 0.5px solid #166534; border-radius: 20px !important; padding: 4px 12px; font-size: 12px; font-weight: 500; }
+.admin-menu-table .status.preparing { background: #431407 !important; color: #fb923c !important; border: 0.5px solid #9a3412; border-radius: 20px !important; }
+
 /* Auth/Registration Page Styles */
 .auth-page {
     padding: 5rem 5% 5rem;
