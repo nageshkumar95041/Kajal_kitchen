@@ -859,6 +859,9 @@ async function loadAdminDashboardStats() {
     const container = document.getElementById('admin-dashboard-stats');
     if (!container) return;
 
+        // Reset grid class if present so we can stack rows vertically
+        container.classList.remove('dashboard-stats-container');
+
     try {
         const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE_URL}/api/admin/dashboard-stats`, {
@@ -878,44 +881,98 @@ async function loadAdminDashboardStats() {
 
         const totalOrders = orderCounts.reduce((sum, item) => sum + item.count, 0);
 
-        let topItemsHtml = '<ul>';
+            const maxSoldCount = topItems.length > 0 ? topItems[0].count : 1;
+            let topItemsHtml = '<ul style="list-style: none; padding: 0; margin-top: 1rem;">';
         if (topItems.length > 0) {
             topItems.forEach(item => {
-                topItemsHtml += `<li><span>${escapeHTML(item._id)}</span> <strong>${item.count} sold</strong></li>`;
+                    const fillWidth = (item.count / maxSoldCount) * 100;
+                    topItemsHtml += `
+                        <li style="margin-bottom: 12px; border-bottom: none; display: block; padding: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 0.95rem; color: var(--admin-text-main);">${escapeHTML(item._id)}</span>
+                                <strong style="font-size: 0.9rem; color: var(--admin-text-muted);">${item.count} sold</strong>
+                            </div>
+                            <div style="width: 80px; height: 4px; background: #2a2a2a; border-radius: 2px; overflow: hidden;">
+                                <div style="background: #f97316; width: ${fillWidth}%; height: 100%; border-radius: 2px;"></div>
+                            </div>
+                        </li>
+                    `;
             });
         } else {
             topItemsHtml += '<li>No item sales data yet.</li>';
         }
         topItemsHtml += '</ul>';
 
-        container.innerHTML = `
-            <div class="stat-card">
-                <h3>Revenue (Completed)</h3>
-                <p class="stat-value">₹${revenue.today.toLocaleString('en-IN')}</p>
-                <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Today</p>
-                <hr style="margin: 10px 0; border-color: var(--admin-border);">
-                <p style="font-size: 1rem;">This Week: <strong>₹${revenue.week.toLocaleString('en-IN')}</strong></p>
-                <p style="font-size: 1rem;">This Month: <strong>₹${revenue.month.toLocaleString('en-IN')}</strong></p>
-            </div>
-            <div class="stat-card">
-                <h3>Orders</h3>
-                <p class="stat-value">${totalOrders}</p>
-                <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Total Orders</p>
-                <ul style="font-size: 0.9rem;">
-                    <li><span>Pending:</span> <strong>${orderCountsMap['Pending'] || 0}</strong></li>
-                    <li><span>Preparing:</span> <strong>${orderCountsMap['Preparing'] || 0}</strong></li>
-                    <li><span>Out for Delivery:</span> <strong>${orderCountsMap['Out for Delivery'] || 0}</strong></li>
-                    <li><span>Completed:</span> <strong>${orderCountsMap['Completed'] || 0}</strong></li>
-                    <li><span>Rejected:</span> <strong>${orderCountsMap['Rejected'] || 0}</strong></li>
-                </ul>
-            </div>
-            <div class="stat-card">
-                <h3>Top Selling Items</h3>
-                ${topItemsHtml}
-            </div>
-        `;
+            const pendingCount = orderCountsMap['Pending'] || 0;
+            const todayStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const todayHtml = `<p style="font-size: 12px; color: #6b7280; margin-top: -10px; margin-bottom: 1.5rem;">${todayStr}</p>`;
 
-        const pendingCount = orderCountsMap['Pending'] || 0;
+            let alertHtml = '';
+            if (pendingCount > 0) {
+                alertHtml = `
+                    <div style="background: #431407; border: 0.5px solid #9a3412; border-radius: 10px; padding: 12px 16px; color: #fb923c; font-size: 13px; margin-bottom: 1.5rem;">
+                        ⚠ ${pendingCount} pending orders waiting for acceptance
+                    </div>
+                `;
+            }
+
+            const quickCardsHtml = `
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 5px;">
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">Today's Revenue</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">₹${revenue.today.toLocaleString('en-IN')}</div>
+                        <div style="font-size: 11px; color: #6b7280;">From completed orders</div>
+                    </div>
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">Total Orders</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">${totalOrders}</div>
+                        <div style="font-size: 11px; color: #22c55e;">${pendingCount} pending now</div>
+                    </div>
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">This Week</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">₹${revenue.week.toLocaleString('en-IN')}</div>
+                        <div style="font-size: 11px; color: #6b7280;">Past 7 days</div>
+                    </div>
+                    <div style="background: #1a1a1a; border-radius: 10px; border: 0.5px solid #2a2a2a; padding: 14px 16px; min-width: 150px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase;">This Month</div>
+                        <div style="font-size: 22px; color: white; font-weight: 500; margin: 4px 0;">₹${revenue.month.toLocaleString('en-IN')}</div>
+                        <div style="font-size: 11px; color: #6b7280;">Current month</div>
+                    </div>
+                </div>
+            `;
+
+        container.innerHTML = `
+                ${todayHtml}
+                ${alertHtml}
+                ${quickCardsHtml}
+                <div class="dashboard-stats-container" style="margin-top: 0;">
+                    <div class="stat-card">
+                        <h3>Revenue (Completed)</h3>
+                        <p class="stat-value">₹${revenue.today.toLocaleString('en-IN')}</p>
+                        <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Today</p>
+                        <hr style="margin: 10px 0; border-color: var(--admin-border);">
+                        <p style="font-size: 1rem;">This Week: <strong>₹${revenue.week.toLocaleString('en-IN')}</strong></p>
+                        <p style="font-size: 1rem;">This Month: <strong>₹${revenue.month.toLocaleString('en-IN')}</strong></p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Orders Status</h3>
+                        <p class="stat-value">${totalOrders}</p>
+                        <p style="color: var(--admin-text-muted); font-size: 0.9rem;">Total Orders</p>
+                        <ul style="font-size: 0.9rem;">
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#f97316; display:inline-block;"></span>Pending:</span> <strong>${orderCountsMap['Pending'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#3b82f6; display:inline-block;"></span>Preparing:</span> <strong>${orderCountsMap['Preparing'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#8b5cf6; display:inline-block;"></span>Out for Delivery:</span> <strong>${orderCountsMap['Out for Delivery'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#22c55e; display:inline-block;"></span>Completed:</span> <strong>${orderCountsMap['Completed'] || 0}</strong></li>
+                            <li style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--admin-border);"><span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>Rejected:</span> <strong>${orderCountsMap['Rejected'] || 0}</strong></li>
+                        </ul>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Top Selling Items</h3>
+                        ${topItemsHtml}
+                    </div>
+                </div>
+            `;
+
         const navOrdersLink = document.getElementById('nav-orders');
         if (navOrdersLink) {
             let badge = navOrdersLink.querySelector('.sidebar-badge');
@@ -1062,6 +1119,13 @@ async function loadAdminSubscriptions(filter = currentAdminSubFilter) {
     const container = document.getElementById('admin-subscriptions-container');
     if (!container) return;
 
+    // Apply flex column layout directly to main wrapper to prevent grid sharing
+    container.classList.remove('admin-grid');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '16px';
+    container.style.width = '100%';
+
     // Hide old dropdown if it exists
     const oldDropdown = document.getElementById('sub-status-filter');
     if (oldDropdown && oldDropdown.parentElement) {
@@ -1125,9 +1189,11 @@ async function loadAdminSubscriptions(filter = currentAdminSubFilter) {
                 actions = `
                     <button class="btn-order" style="padding: 8px 16px; background: #052e16; color: #4ade80; border: 0.5px solid #166534; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Active')">Activate</button>
                     <button class="btn-order" style="padding: 8px 16px; background: #3b0a0a; color: #f87171; border: 0.5px solid #991b1b; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel</button>
+                    <button class="btn-order" style="background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 8px; padding: 8px 16px; font-size: 12px; text-transform: none; white-space: nowrap; width: auto; min-width: fit-content;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel</button>
                 `;
             } else if (sub.status === 'Active') {
                 actions = `<button class="btn-order" style="padding: 8px 16px; background: #3b0a0a; color: #f87171; border: 0.5px solid #991b1b; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel Sub</button>`;
+                actions = `<button class="btn-order" style="background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 8px; padding: 8px 16px; font-size: 12px; text-transform: none; white-space: nowrap; width: auto; min-width: fit-content;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel Sub</button>`;
             }
 
             return `
@@ -1161,6 +1227,7 @@ async function loadAdminSubscriptions(filter = currentAdminSubFilter) {
         }).join('');
 
         container.innerHTML = filterHtml + `<div style="display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 14px; width: 100%;">${subsHtml}</div>`;
+        container.innerHTML = filterHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; width: 100%;">${subsHtml}</div>`;
     } catch (error) {
         container.innerHTML = '<p class="empty-cart" style="color:red;">Error fetching subscriptions.</p>';
     }
