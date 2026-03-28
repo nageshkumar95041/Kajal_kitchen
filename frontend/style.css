@@ -10,6 +10,7 @@
 body {
     line-height: 1.6;
     color: #333;
+    padding-top: 80px; /* Accommodate fixed navbar */
 }
 
 html {
@@ -30,19 +31,21 @@ html {
     position: fixed;
     width: 100%;
     top: 0;
-    z-index: 100;
-    transition: all 0.3s ease;
+    z-index: 1000;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 #navbar.scrolled {
     padding: 1rem 5%;
-    background-color: #fff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background: rgba(10, 6, 2, 0.97) !important;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(232, 168, 76, 0.15);
 }
 
 #navbar.scrolled .logo,
 #navbar.scrolled .nav-links a {
-    color: #333;
+    color: #fff !important;
 }
 
 .logo {
@@ -84,7 +87,7 @@ html {
 }
 
 #navbar.scrolled .nav-cart-icon {
-    color: #333;
+    color: #fff;
 }
 #navbar.scrolled .nav-cart-icon:hover {
     color: #e67e22;
@@ -110,7 +113,7 @@ html {
     transition: color 0.3s ease;
 }
 #navbar.scrolled .menu-toggle {
-    color: #333;
+    color: #fff;
 }
 
 .nav-links {
@@ -142,6 +145,7 @@ html {
 /* Hero Section */
 .hero {
     height: 100vh;
+    margin-top: -80px; /* Counteract body padding for full-screen hero */
     background: 
         linear-gradient(105deg, rgba(8,4,1,0.90) 0%, rgba(15,8,2,0.72) 40%, rgba(8,4,1,0.35) 100%),
         radial-gradient(ellipse at center, transparent 40%, rgba(5,3,1,0.60) 100%),
@@ -382,8 +386,8 @@ html {
 
 /* Menu Section */
 .menu-section {
-    padding: 5rem 5%;
-    background-color: #f9f9f9;
+    background: #faf8f4;
+    padding: 60px 5%;
     text-align: center;
 }
 
@@ -391,73 +395,95 @@ html {
 .menu-filters {
     display: flex;
     justify-content: center;
-    gap: 1rem 2rem;
+    gap: 12px;
     flex-wrap: wrap;
-    margin-bottom: 3rem;
+    margin: 28px auto;
     align-items: center;
     background: #fff;
-    padding: 1rem;
-    border-radius: 50px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 4px;
+    padding: 14px 28px;
     max-width: fit-content;
-    margin-left: auto;
-    margin-right: auto;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 .filter-group {
     display: flex;
     gap: 1rem;
     align-items: center;
 }
-.filter-group label {
-    cursor: pointer;
-    font-weight: 500;
-    color: #555;
+.menu-filters label,
+.menu-filters select,
+.menu-filters input {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #3a2a10;
+  letter-spacing: 0.03em;
 }
-.filter-group input[type="radio"], .filter-group input[type="checkbox"] {
-    margin-right: 0.3rem;
-    accent-color: #e67e22;
-    transform: scale(1.2);
+.menu-filters input[type="radio"], .menu-filters input[type="checkbox"] {
+    accent-color: #E8A84C;
 }
-.filter-group select {
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    background: #fff;
-    font-size: 0.95rem;
+.menu-filters select {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 6px 12px;
+  border-radius: 3px;
+  background: #fafafa;
+  font-size: 13px;
+  color: #3a2a10;
     cursor: pointer;
-    font-weight: 500;
 }
 
 .section-title, .menu-category-title {
-    font-size: 2.5rem;
-    margin-bottom: 3rem;
-    color: #2c3e50;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    font-weight: 600;
+    color: #1a0e00;
+    letter-spacing: -0.01em;
+    text-align: center;
+    margin-bottom: 8px;
 }
 .menu-category-title {
-    margin: 4rem 0 2rem;
+    font-size: 32px;
+    margin: 40px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(232, 168, 76, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 2px;
+  background: #E8A84C;
+  margin: 12px auto 0;
+  border-radius: 0;
 }
 
 .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 2rem;
-    max-width: 1400px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 0 5%;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
 .menu-card {
-    background: #f5f0e8;
-    border-radius: 15px;
+    background: #ffffff;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.07);
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Softer shadow */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
     display: flex;
     flex-direction: column;
 }
 
 .menu-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); /* Slightly more pronounced on hover */
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13);
 }
 
 .item-unavailable {
@@ -468,20 +494,25 @@ html {
     position: relative;
     height: 200px; /* Adjusted height */
     background-color: #f5f0e8; /* Seamless placeholder color */
+    overflow: hidden;
 }
 .card-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-top-left-radius: 15px; /* Match card border-radius */
-    border-top-right-radius: 15px; /* Match card border-radius */
+    display: block;
+    transition: transform 0.4s ease;
+}
+.menu-card:hover .card-img {
+    transform: scale(1.04);
 }
 
 .card-content {
-    padding: 1.5rem;
+    padding: 18px 20px 20px;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+    gap: 6px;
     text-align: left;
 }
 
@@ -493,17 +524,22 @@ html {
 }
 
 .card-title-row h3 {
-    font-size: 1.2rem;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: #1a0e00;
+    letter-spacing: 0.01em;
+    margin: 0 0 4px;
+    line-height: 1.2;
 }
 
 .card-description {
-    color: #666;
-    font-size: 0.95rem;
-    margin-bottom: 0.75rem;
-    height: calc(0.95rem * 1.6 * 2); /* font-size * line-height * 2 lines */
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.5);
     line-height: 1.6;
+    margin: 0 0 10px;
+    font-weight: 300;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -512,52 +548,67 @@ html {
 }
 
 .card-meta-info {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
+    gap: 6px;
+    margin-bottom: 4px;
 }
 
 .meta-rating {
-    color: #e67e22;
-    font-weight: bold;
+    color: #E8A84C;
 }
 
 .meta-delivery {
-    color: #666;
+    color: inherit;
 }
 
 .card-footer {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-top: auto; /* Pushes footer to the bottom */
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.price {
+.menu-card .price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: #E8A84C;
+    letter-spacing: 0.01em;
+}
+/* Keep original price style for other components like Cart & Pricing page */
+.price:not(.menu-card .price) {
     font-size: 1.3rem;
     font-weight: bold;
     color: #e67e22;
 }
 
 .btn-order {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 7px 18px;
-    background-color: #fff;
-    color: #e67e22;
+    padding: 10px 22px;
     border: 1px solid #e67e22;
-    border-radius: 6px;
-    font-weight: bold;
+    color: #E8A84C;
+    background: transparent;
+    border-radius: 2px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 0.2s, color 0.2s;
 }
 
 .btn-order:hover {
-    background-color: #fff8f2;
-    transform: scale(1.05);
+    background: #E8A84C;
+    color: #1a0e00;
 }
 
 /* Testimonials Section */
@@ -667,13 +718,20 @@ html {
 }
 .badge-bestseller { background: #e74c3c; left: 10px; }
 .badge-recommended { background: #9b59b6; left: 10px; }
-.badge-veg { background: #27ae60; right: 10px; }
+.badge-veg { 
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: #166534; 
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 2px;
+    right: 10px; 
+}
 .veg-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background-color: #fff;
-    border-radius: 50%;
+    display: none;
 }
 .badge-sold-out {
     background: rgba(0, 0, 0, 0.6);
@@ -683,12 +741,14 @@ html {
     padding: 8px 20px;
 }
 .urgency-text {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #c2410c;
+    letter-spacing: 0.04em;
     display: block;
-    padding: 0 1rem;
-    color: #e74c3c;
-    font-size: 0.85rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+    padding: 0;
+    margin-bottom: 0;
 }
 
 /* Quantity Stepper for Menu Page */
@@ -750,6 +810,18 @@ html {
 @keyframes slideUp {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+    .menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 640px) {
+    .menu-grid {
+        grid-template-columns: 1fr;
+        padding: 0 4%;
+    }
 }
 
 @media (max-width: 1024px) {
@@ -859,12 +931,11 @@ footer p {
     .stat-label {
         font-size: 10px;
     }
+    .menu-section .section-title { font-size: 34px; }
+    .menu-category-title { font-size: 26px; }
+    .menu-filters { padding: 12px 16px; gap: 10px; }
     .section-title, .menu-category-title, .about-section h2, .contact-section h2 {
-        font-size: 2rem;
-    }
-    .menu-card {
-        width: 100%;
-        max-width: 350px;
+        font-size: 2rem; /* This is a general rule, user's request is more specific for menu */
     }
     .form-row {
         flex-direction: column;
