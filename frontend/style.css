@@ -25,8 +25,7 @@ html {
     align-items: center;
     padding: 1.5rem 5%;
     background-color: transparent !important;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    border-top: 2px solid #E8A84C;
+    border-bottom: 2px solid #f97316 !important;
     flex-wrap: wrap;
     position: fixed;
     width: 100%;
@@ -40,7 +39,7 @@ html {
     background: rgba(10, 6, 2, 0.97) !important;
     backdrop-filter: blur(12px);
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
-    border-bottom: 1px solid rgba(232, 168, 76, 0.15);
+    border-bottom: 2px solid #f97316 !important;
 }
 
 #navbar.scrolled .logo,
@@ -74,26 +73,43 @@ html {
 }
 
 .nav-cart-icon {
-    color: #fff;
+    background: #f97316 !important;
+    color: white !important;
     text-decoration: none;
-    font-size: 1.1rem;
+    font-size: 13px;
     font-weight: 500;
     transition: color 0.3s;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 7px 14px;
 }
 
 .nav-cart-icon:hover {
-    color: #e67e22;
+    opacity: 0.9;
 }
 
 #navbar.scrolled .nav-cart-icon {
-    color: #fff;
+    color: white !important;
 }
 #navbar.scrolled .nav-cart-icon:hover {
-    color: #e67e22;
+    opacity: 0.9;
 }
 #navbar.menu-open .nav-cart-icon {
     color: #333 !important;
+}
+
+#cart-count {
+    background: white;
+    color: #f97316;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @keyframes cartPop {
@@ -134,12 +150,15 @@ html {
     letter-spacing: 0.06em;
     font-weight: 400;
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.72) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
     transition: color 0.2s;
+    padding: 6px 12px;
+    border-radius: 6px;
 }
 
-.nav-links a:hover {
-    color: #E8A84C !important;
+.nav-links a:hover, .nav-links a.active {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.06);
 }
 
 /* Hero Section */
@@ -1827,7 +1846,8 @@ footer a:hover {
 
 .toast-notification {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 0 12px 12px 0;
+    border-left: 3px solid #f97316;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
     width: 100%;
     max-width: 300px;
@@ -1838,7 +1858,6 @@ footer a:hover {
     display: flex;
     flex-direction: column;
     position: relative;
-    border: none;
 }
 
 .toast-notification.hiding {
@@ -1864,9 +1883,17 @@ footer a:hover {
 }
 
 .toast-icon {
-    color: #2ecc71;
-    font-size: 20px;
+    background: #fff7ed;
+    color: #f97316;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
     margin-top: 0;
+    flex-shrink: 0;
 }
 
 .toast-content {
@@ -1954,10 +1981,10 @@ footer a:hover {
     height: 100%;
     background: #f97316;
     width: 100%;
-    animation: progressShrink 4s linear forwards;
+    animation: shrink 4s linear forwards;
 }
 
-@keyframes progressShrink {
+@keyframes shrink {
     from { width: 100%; }
     to { width: 0%; }
 }

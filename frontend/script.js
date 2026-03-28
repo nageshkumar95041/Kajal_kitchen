@@ -666,7 +666,7 @@ function showToast(itemName, price) {
     
     toast.innerHTML = `
         <div class="toast-header">
-            <div class="toast-icon">✅</div>
+            <div class="toast-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
             <div class="toast-content">
                 <div class="toast-title">Added to cart!</div>
                 <div class="toast-desc">
@@ -721,15 +721,15 @@ function showSystemToast(title, message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
     
-    const icon = type === 'success' ? '✅' : '❌';
-    const iconColor = type === 'success' ? '#2ecc71' : '#e74c3c';
-    const progressColor = type === 'success' ? '#E07B2D' : '#e74c3c';
+    const icon = type === 'success' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' : '❌';
+    const iconColor = type === 'success' ? '#f97316' : '#e74c3c';
+    const progressColor = type === 'success' ? '#f97316' : '#e74c3c';
 
     toast.innerHTML = `
         <div class="toast-header">
             <div class="toast-icon" style="color: ${iconColor}">${icon}</div>
             <div class="toast-content">
-                <div class="toast-title">${escapeHTML(title)}</div>
+                <div class="toast-title">${title}</div>
                 <div class="toast-desc">${escapeHTML(message)}</div>
             </div>
             <button class="toast-close">&times;</button>
@@ -745,7 +745,7 @@ function showSystemToast(title, message, type = 'success') {
         toast.classList.add('hiding');
         toast.addEventListener('animationend', () => { if (toast.parentElement) toast.parentElement.removeChild(toast); });
     };
-    const timeout = setTimeout(removeToast, 3500);
+    const timeout = setTimeout(removeToast, 4000);
     toast.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timeout); removeToast(); });
 }
 
@@ -2270,7 +2270,8 @@ async function handleLogin(event) {
             localStorage.setItem('loggedInUser', JSON.stringify(data.user));
             localStorage.setItem('authToken', data.token);
             
-            showSystemToast('Success', `Welcome back, ${data.user.name}!`);
+            const capitalizedName = data.user.name.charAt(0).toUpperCase() + data.user.name.slice(1);
+            showSystemToast(`Welcome back, <span style="color: #f97316; font-weight: 500;">${escapeHTML(capitalizedName)}!</span>`, 'Ready to order something delicious?');
             setTimeout(() => {
                 if (data.user.role === 'admin') {
                     window.location.href = 'admin.html';
@@ -2301,7 +2302,8 @@ async function handleGoogleLogin(response) {
             localStorage.setItem('loggedInUser', JSON.stringify(data.user));
             localStorage.setItem('authToken', data.token);
             
-            showSystemToast('Success', `Welcome, ${data.user.name}!`);
+            const capitalizedName = data.user.name.charAt(0).toUpperCase() + data.user.name.slice(1);
+            showSystemToast(`Welcome back, <span style="color: #f97316; font-weight: 500;">${escapeHTML(capitalizedName)}!</span>`, 'Ready to order something delicious?');
             setTimeout(() => { 
                 if (data.user.role === 'admin') {
                     window.location.href = 'admin.html';
@@ -2402,8 +2404,10 @@ function showForgotPasswordModal(event) {
 }
 
 function updateAuthNav() {
-    const loggedInUser = localStorage.getItem('loggedInUser');
+    const loggedInUserStr = localStorage.getItem('loggedInUser');
+    const loggedInUser = loggedInUserStr ? JSON.parse(loggedInUserStr) : null;
     const navLinks = document.querySelector('.nav-links');
+    const navRight = document.querySelector('.nav-right');
     
     if (!navLinks) return;
 
@@ -2411,8 +2415,8 @@ function updateAuthNav() {
     const cartLinks = document.querySelectorAll('a[href="cart.html"]');
     cartLinks.forEach(link => {
         if (loggedInUser) {
-            if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'list-item';
-            else link.style.display = 'inline-block';
+            if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'inline-flex';
+            else link.style.display = 'inline-flex';
         } else {
             if (link.parentElement.tagName === 'LI') link.parentElement.style.display = 'none';
             else link.style.display = 'none';
@@ -2427,26 +2431,85 @@ function updateAuthNav() {
         }
     });
 
+    const existingAvatar = document.querySelector('.nav-right > div[data-avatar="true"]');
+    if (existingAvatar) existingAvatar.remove();
+
     if (loggedInUser) {
-        // Add user-specific links
-        const myOrdersLi = document.createElement('li');
-        myOrdersLi.innerHTML = '<a href="my-orders.html">My Orders</a>';
-        navLinks.appendChild(myOrdersLi);
-
-        const profileLi = document.createElement('li');
-        profileLi.innerHTML = '<a href="profile.html">Profile</a>';
-        navLinks.appendChild(profileLi);
-
-        const logoutLi = document.createElement('li');
-        const logoutLink = document.createElement('a');
-        logoutLink.textContent = 'Logout';
-        logoutLink.href = '#';
-        logoutLink.onclick = (e) => {
-            e.preventDefault();
-            handleLogout();
+        // Add avatar circle and dropdown
+        const initial = loggedInUser.name ? loggedInUser.name.charAt(0).toUpperCase() : 'U';
+        
+        const avatarContainer = document.createElement('div');
+        avatarContainer.dataset.avatar = "true";
+        avatarContainer.style.position = 'relative';
+        
+        const avatarCircle = document.createElement('div');
+        avatarCircle.style.width = '30px';
+        avatarCircle.style.height = '30px';
+        avatarCircle.style.borderRadius = '50%';
+        avatarCircle.style.background = '#fff7ed';
+        avatarCircle.style.color = '#c2410c';
+        avatarCircle.style.fontSize = '12px';
+        avatarCircle.style.border = '1.5px solid #fed7aa';
+        avatarCircle.style.display = 'flex';
+        avatarCircle.style.alignItems = 'center';
+        avatarCircle.style.justifyContent = 'center';
+        avatarCircle.style.fontWeight = 'bold';
+        avatarCircle.style.cursor = 'pointer';
+        avatarCircle.innerText = initial;
+        
+        const dropdown = document.createElement('div');
+        dropdown.style.position = 'absolute';
+        dropdown.style.top = '120%';
+        dropdown.style.right = '0';
+        dropdown.style.background = '#fff';
+        dropdown.style.borderRadius = '8px';
+        dropdown.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
+        dropdown.style.padding = '8px 0';
+        dropdown.style.minWidth = '150px';
+        dropdown.style.display = 'none';
+        dropdown.style.flexDirection = 'column';
+        dropdown.style.zIndex = '1001';
+        
+        const createDropLink = (text, href, onClick) => {
+            const a = document.createElement('a');
+            a.innerText = text;
+            a.href = href;
+            a.style.padding = '10px 20px';
+            a.style.color = '#333';
+            a.style.textDecoration = 'none';
+            a.style.fontSize = '14px';
+            a.style.fontFamily = "'DM Sans', sans-serif";
+            a.style.display = 'block';
+            a.onmouseover = () => a.style.background = '#f9f9f9';
+            a.onmouseout = () => a.style.background = 'transparent';
+            if (onClick) {
+                a.onclick = (e) => { e.preventDefault(); onClick(); };
+            }
+            return a;
         };
-        logoutLi.appendChild(logoutLink);
-        navLinks.appendChild(logoutLi);
+        
+        dropdown.appendChild(createDropLink('My Orders', 'my-orders.html'));
+        dropdown.appendChild(createDropLink('Profile', 'profile.html'));
+        dropdown.appendChild(createDropLink('Logout', '#', handleLogout));
+        
+        avatarCircle.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+        };
+        
+        document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+        });
+        
+        avatarContainer.appendChild(avatarCircle);
+        avatarContainer.appendChild(dropdown);
+        
+        const menuToggle = document.getElementById('mobile-menu');
+        if (menuToggle && navRight) {
+            navRight.insertBefore(avatarContainer, menuToggle);
+        } else if (navRight) {
+            navRight.appendChild(avatarContainer);
+        }
     } else {
         // Add guest links
         const loginLi = document.createElement('li');
