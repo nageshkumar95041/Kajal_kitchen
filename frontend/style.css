@@ -1456,21 +1456,12 @@ footer a:hover {
 }
 /* Cart Page Styles */
 .cart-page {
-    padding: 8rem 5% 5rem;
-    min-height: calc(100vh - 120px);
-    background-color: #f9f9f9;
     background: #faf8f4 !important;
     min-height: 100vh !important;
     padding: 60px 5% !important;
 }
 
 .cart-container {
-    max-width: 800px;
-    margin: 0 auto;
-    background: #fff;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     background: #ffffff !important;
     border: 1px solid rgba(0,0,0,0.07) !important;
     border-radius: 4px !important;
@@ -1493,11 +1484,6 @@ footer a:hover {
 }
 
 .cart-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid #eee;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -1577,11 +1563,6 @@ footer a:hover {
 }
 
 .cart-total {
-    text-align: right;
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-top: 2rem;
-    color: #2c3e50;
     text-align: right !important;
     margin-top: 1rem !important;
 }
@@ -1869,11 +1850,6 @@ footer a:hover {
 
 /* Payment Page Styles */
 .payment-page {
-    padding: 8rem 5% 5rem;
-    min-height: calc(100vh - 120px);
-    background-color: #f9f9f9;
-    display: flex;
-    justify-content: center;
     background: #faf8f4 !important;
     min-height: 100vh !important;
     padding: 60px 5% !important;
@@ -1882,12 +1858,6 @@ footer a:hover {
 }
 
 .payment-container {
-    background: #fff;
-    padding: 3rem;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    max-width: 500px;
-    width: 100%;
     background: #ffffff !important;
     border: 1px solid rgba(0,0,0,0.07) !important;
     border-radius: 4px !important;
@@ -1899,9 +1869,6 @@ footer a:hover {
 }
 
 .payment-container h2 {
-    margin-bottom: 2rem;
-    color: #2c3e50;
-    text-align: center;
     font-family: 'Cormorant Garamond', serif !important;
     font-size: 34px !important;
     font-weight: 600 !important;
@@ -1937,14 +1904,8 @@ footer a:hover {
 .payment-form {
     display: flex;
     flex-direction: column;
-    gap: 1.2rem;
 }
 
-.payment-form input {
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
 .payment-form input[type="text"], 
 .payment-form input[type="tel"], 
 .payment-form input[type="email"] {
