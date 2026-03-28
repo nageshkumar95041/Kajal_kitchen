@@ -2447,8 +2447,13 @@ async function handleRegistration(event) {
         const data = await response.json();
 
         if (response.ok) {
-            showSystemToast('Success', 'Account created successfully! Redirecting...');
-            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            if (data.requiresVerification) {
+                showSystemToast('Success', 'Verification code sent!');
+                showOtpModal(contact);
+            } else {
+                showSystemToast('Success', 'Account created successfully! Redirecting...');
+                setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            }
         } else {
             showSystemToast('Error', data.message || 'Registration failed.', 'error');
         }
@@ -2492,7 +2497,12 @@ async function handleLogin(event) {
                 }
             }, 1000);
         } else {
-            showSystemToast('Error', data.message || 'Invalid credentials.', 'error');
+            if (response.status === 403 && data.requiresVerification) {
+                showSystemToast('Info', data.message);
+                showOtpModal(contact);
+            } else {
+                showSystemToast('Error', data.message || 'Invalid credentials.', 'error');
+            }
         }
     } catch (error) {
         console.error('Login Error:', error);
@@ -2559,6 +2569,77 @@ async function initializeGoogleLogin() {
     } catch (error) {
         console.error('Failed to load Google configuration.');
     }
+}
+
+function showOtpModal(contact) {
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-alert-page';
+    const content = document.createElement('div');
+    content.className = 'custom-alert-box';
+    content.style.textAlign = 'left';
+    
+    const hintText = contact.includes('@') ? `sent to ${escapeHTML(contact)}` : `sent via SMS to ${escapeHTML(contact)}`;
+    
+    content.innerHTML = `
+        <h3 style="margin-bottom: 1rem; color: #2c3e50; text-align: center;">Verify Your Account</h3>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; text-align: center;">Enter the 6-digit code ${hintText}</p>
+        <form id="verify-otp-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+                <input type="text" id="otp-input" required style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1.2rem; text-align: center; letter-spacing: 0.5rem; font-weight: bold;" maxlength="6" placeholder="------">
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                <button type="submit" class="btn" style="flex: 1; border-radius: 8px;">Verify</button>
+                <button type="button" class="btn" style="flex: 1; background-color: #f1f2f6; color: #333; border-radius: 8px;" onclick="document.body.removeChild(this.closest('#custom-alert-page'))">Cancel</button>
+            </div>
+            <p style="text-align: center; font-size: 0.8rem; margin-top: 10px; color: #888;">
+                Didn't receive it? <a href="#" id="resend-otp-link" style="color: #e67e22; font-weight: bold; text-decoration: none;">Resend Code</a>
+            </p>
+        </form>
+    `;
+    
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+    
+    document.getElementById('otp-input').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/[^0-9]/g, ''); });
+
+    document.getElementById('resend-otp-link').onclick = async (e) => {
+        e.preventDefault();
+        const link = e.target;
+        link.style.pointerEvents = 'none';
+        link.innerText = 'Sending...';
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/resend-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact }) });
+            const data = await res.json();
+            if (res.ok) {
+                showSystemToast('Success', data.message);
+                let countdown = 60;
+                const timer = setInterval(() => {
+                    link.innerText = `Resend in ${countdown}s`;
+                    countdown--;
+                    if (countdown < 0) { clearInterval(timer); link.innerText = 'Resend Code'; link.style.pointerEvents = 'auto'; }
+                }, 1000);
+            } else {
+                showSystemToast('Error', data.message || 'Failed to resend.', 'error');
+                link.innerText = 'Resend Code'; link.style.pointerEvents = 'auto';
+            }
+        } catch (err) { showSystemToast('Error', 'Network error.', 'error'); link.innerText = 'Resend Code'; link.style.pointerEvents = 'auto'; }
+    };
+
+    document.getElementById('verify-otp-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const otp = document.getElementById('otp-input').value;
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true; submitBtn.innerText = 'Verifying...';
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact, otp }) });
+            const data = await response.json();
+            if (response.ok) {
+                document.body.removeChild(overlay);
+                showSystemToast('Success', 'Account verified! Logging you in...');
+                if (data.token) { localStorage.setItem('loggedInUser', JSON.stringify(data.user)); localStorage.setItem('authToken', data.token); setTimeout(() => { if (data.user.role === 'admin') window.location.href = 'admin.html'; else window.location.href = 'index.html'; }, 1000); }
+            } else { showSystemToast('Error', data.message || 'Invalid OTP.', 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Verify'; }
+        } catch (error) { submitBtn.disabled = false; submitBtn.innerText = 'Verify'; showSystemToast('Error', 'Error connecting to the server.', 'error'); }
+    };
 }
 
 function showForgotPasswordModal(event) {
