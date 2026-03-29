@@ -13,17 +13,13 @@ body {
     padding-top: 75px; /* Accommodate fixed navbar */
     overflow-x: hidden;
     max-width: 100%;
-    overflow-x: hidden;
-    max-width: 100%;
+    background-color: #faf8f4; /* Default background */
 }
 
 html {
-    overflow-x: hidden;
-    max-width: 100%;
     font-size: 16px;
     scroll-behavior: smooth;
-    overflow-x: hidden;
-    max-width: 100%;
+    background-color: #0f0700; /* Matches footer to hide white overscroll gap */
 }
 
 /* Navbar */
@@ -173,6 +169,7 @@ html {
 .hero {
     height: auto;
     min-height: 100vh;
+    min-height: 100svh; /* Modern mobile fix for dynamic address bar */
     margin-top: -80px; /* Counteract body padding for full-screen hero */
     background: 
         linear-gradient(105deg, rgba(8,4,1,0.90) 0%, rgba(15,8,2,0.72) 40%, rgba(8,4,1,0.35) 100%),
