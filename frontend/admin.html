@@ -15,6 +15,7 @@
                 <li><a href="#" onclick="switchAdminTab('tab-orders')" id="nav-orders">📦 Live Orders</a></li>
                 <li><a href="#" onclick="switchAdminTab('tab-subscriptions')" id="nav-subscriptions">📅 Subscriptions</a></li>
                 <li><a href="#" onclick="switchAdminTab('tab-menu')" id="nav-menu">🍔 Menu Management</a></li>
+                <li><a href="#" onclick="switchAdminTab('tab-tiffin')" id="nav-tiffin">🍱 Today's Tiffin</a></li>
                 <li><a href="#" onclick="switchAdminTab('tab-customers')" id="nav-customers">👥 Customers</a></li>
             </ul>
             <div class="sidebar-footer">
@@ -64,6 +65,12 @@
                 <h2>Menu Management</h2>
                 <p style="color: var(--admin-text-muted);">Manage your restaurant's offerings.</p>
                 <div id="admin-menu-container" style="margin-top: 2rem;"></div>
+            </div>
+
+            <div id="tab-tiffin" class="admin-tab-content">
+                <h2>Today's Tiffin Menu</h2>
+                <p style="color: var(--admin-text-muted);">Manage the highlighted tiffin items on the homepage hero section.</p>
+                <div id="admin-tiffin-container" style="margin-top: 2rem;"></div>
             </div>
 
             <div id="tab-customers" class="admin-tab-content">

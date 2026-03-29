@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // On the homepage, load all the dynamic menu sections
     if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html')) {
         loadMenu();
+        loadHeroTiffin();
         showStickyCart();
         // Add event listener for menu card interactions
         const menuContainer = document.getElementById('dynamic-menu-container');
@@ -506,6 +507,10 @@ function handleMenuInteraction(event) {
         if (!itemInCart) {
             cart.push({ name: itemName, price: itemPrice, quantity: 1 });
         }
+        target.disabled = true;
+        target.innerHTML = '✔ Added';
+        target.style.backgroundColor = '#E8A84C';
+        target.style.color = '#1a0e00';
     } else if (action === 'increase') {
         if (itemInCart) {
             itemInCart.quantity++;
@@ -521,7 +526,13 @@ function handleMenuInteraction(event) {
 
     localStorage.setItem('cart', JSON.stringify(cart));
     
-    updateCardActionControl(card, cart);
+    if (action === 'add') {
+        setTimeout(() => {
+            updateCardActionControl(card, cart);
+        }, 800); // Wait 800ms to show the checkmark before converting to stepper
+    } else {
+        updateCardActionControl(card, cart);
+    }
 
     updateCartCount();
     showStickyCart();
@@ -536,6 +547,91 @@ function handleMenuInteraction(event) {
         }
     }
 }
+
+async function loadHeroTiffin() {
+    const container = document.getElementById('hero-tiffin-container');
+    if (!container) return;
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/tiffin-menu`);
+        if(!res.ok) return;
+        const items = await res.json();
+
+        if (!items || items.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        let html = '<div class="hero-tiffin-header"><span>TODAY\'S TIFFIN MENU</span><span class="tiffin-status">● OPEN</span></div>';
+
+        items.forEach(item => {
+            if(item.available === false) return; // skip unavailable items
+            
+            const safeName = escapeHTML(item.name);
+            const safeMeta = escapeHTML(item.meta);
+            const safeEmoji = escapeHTML(item.emoji);
+            const price = item.price;
+            const escStr = safeName.replace(/'/g, "\\'");
+
+            html += `<div class="hero-tiffin-item">
+                    <div class="tiffin-item-info"><span class="tiffin-emoji">${safeEmoji}</span><div><div class="tiffin-item-name">${safeName}</div><div class="tiffin-item-meta">${safeMeta}</div></div></div>
+                    <div class="tiffin-item-action"><span class="tiffin-price">₹${price}</span><button class="tiffin-add-btn" onclick="addTiffinToCart('${escStr}', ${price}, event)">+</button></div>
+                </div>`;
+        });
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Failed to load hero tiffin', e);
+    }
+}
+
+window.addTiffinToCart = function(itemName, itemPrice, event) {
+    const token = localStorage.getItem('authToken');
+    if (!token || isTokenExpired(token)) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('loggedInUser');
+        showSystemToast('Info', 'Your session has expired or you are not logged in. Please login to continue.');
+        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+        return;
+    }
+
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let itemInCart = cart.find(i => i.name === itemName);
+
+    if (!itemInCart) {
+        cart.push({ name: itemName, price: itemPrice, quantity: 1 });
+    } else {
+        itemInCart.quantity++;
+    }
+
+    if (event && event.target) {
+        const btn = event.target.closest('button') || event.target;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '✔';
+        btn.style.backgroundColor = '#e07b39';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            btn.style.backgroundColor = '';
+            btn.style.color = '';
+        }, 800);
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+    
+    updateCartCount();
+    showStickyCart();
+    showToast(itemName, itemPrice);
+
+    const cartIcon = document.querySelector('.nav-cart-icon');
+    if (cartIcon) {
+        cartIcon.classList.remove('cart-bump');
+        void cartIcon.offsetWidth;
+        cartIcon.classList.add('cart-bump');
+    }
+};
 
 function updateCardActionControl(cardElement, cart) {
     const itemName = cardElement.dataset.name;
@@ -843,6 +939,7 @@ function switchAdminTab(tabId) {
     else if (tabId === 'tab-orders') loadAdminOrders();
     else if (tabId === 'tab-subscriptions') loadAdminSubscriptions();
     else if (tabId === 'tab-menu') loadAdminMenu();
+    else if (tabId === 'tab-tiffin') loadAdminTiffin();
     else if (tabId === 'tab-customers') loadAdminCustomers();
 }
 
@@ -1779,6 +1876,104 @@ function showMenuModal(item = null) {
             showSystemToast('Error', 'Error connecting to server.', 'error');
         }
     };
+}
+
+async function loadAdminTiffin() {
+    const container = document.getElementById('admin-tiffin-container');
+    if (!container) return;
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE_URL}/api/tiffin-menu`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const items = await response.json();
+        
+        let html = '<button class="btn" style="margin-bottom: 1rem;" onclick="showTiffinModal()">+ Add Today\'s Tiffin</button>';
+        if (!Array.isArray(items) || items.length === 0) {
+            html += '<p class="empty-cart">No tiffin items found.</p>';
+        } else {
+            html += '<div style="overflow-x: auto;"><table style="width:100%; border-collapse: collapse; background: var(--admin-card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 5px; overflow: hidden; min-width: 600px;">';
+            html += '<tr style="background: var(--admin-sidebar); color: var(--admin-sidebar-text); text-align: left;"><th style="padding: 1rem;">Emoji</th><th style="padding: 1rem;">Name</th><th style="padding: 1rem;">Meta</th><th style="padding: 1rem;">Price</th><th style="padding: 1rem;">Status</th><th style="padding: 1rem;">Actions</th></tr>';
+            items.forEach(item => {
+                const isAvailable = item.available !== false;
+                html += `<tr style="border-bottom: 1px solid var(--admin-border);">
+                        <td style="padding: 1rem; font-size: 1.5rem;">${escapeHTML(item.emoji)}</td>
+                        <td style="padding: 1rem;">${escapeHTML(item.name)}</td>
+                        <td style="padding: 1rem; color: var(--admin-text-muted);">${escapeHTML(item.meta)}</td>
+                        <td style="padding: 1rem;">₹${item.price}</td>
+                        <td style="padding: 1rem;"><span class="status ${isAvailable ? 'completed' : 'preparing'}">${isAvailable ? 'Available' : 'Sold Out'}</span></td>
+                        <td style="padding: 1rem; display: flex; gap: 6px;">
+                            <button class="btn-order" style="padding: 6px 14px; background-color: #1e3a5f; color: #60a5fa; border: 1px solid #1d4ed8; border-radius: 7px;" onclick='showTiffinModal(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
+                            <button class="btn-order" style="padding: 6px 14px; background-color: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 7px;" onclick="deleteTiffinItem('${item._id}')">Delete</button>
+                        </td>
+                    </tr>`;
+            });
+            html += '</table></div>';
+        }
+        container.innerHTML = html;
+    } catch (error) {
+        container.innerHTML = '<p style="color:red;">Error fetching tiffin items.</p>';
+    }
+}
+
+function showTiffinModal(item = null) {
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-alert-page';
+    const content = document.createElement('div');
+    content.className = 'custom-alert-box';
+    content.style.textAlign = 'left';
+    
+    const isEdit = !!item;
+    content.innerHTML = `
+        <h3 style="margin-bottom: 1rem; color: var(--admin-text-main); text-align: center;">${isEdit ? 'Edit Tiffin Item' : 'Add Tiffin Item'}</h3>
+        <form id="tiffin-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="hidden" id="tiffin-id" value="${isEdit ? item._id : ''}">
+            <div>
+                <label style="font-weight: bold; display: block; margin-bottom: 0.3rem; color: var(--admin-text-main);">Emoji</label>
+                <input type="text" id="tiffin-emoji" value="${isEdit ? escapeHTML(item.emoji) : '🍛'}" required style="width: 100%; padding: 8px; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text-main);">
+            </div>
+            <div>
+                <label style="font-weight: bold; display: block; margin-bottom: 0.3rem; color: var(--admin-text-main);">Name</label>
+                <input type="text" id="tiffin-name" value="${isEdit ? escapeHTML(item.name) : ''}" required style="width: 100%; padding: 8px; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text-main);">
+            </div>
+            <div>
+                <label style="font-weight: bold; display: block; margin-bottom: 0.3rem; color: var(--admin-text-main);">Meta (e.g. Lunch · Veg)</label>
+                <input type="text" id="tiffin-meta" value="${isEdit ? escapeHTML(item.meta) : ''}" required style="width: 100%; padding: 8px; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text-main);">
+            </div>
+            <div>
+                <label style="font-weight: bold; display: block; margin-bottom: 0.3rem; color: var(--admin-text-main);">Price (₹)</label>
+                <input type="number" id="tiffin-price" value="${isEdit ? item.price : ''}" required style="width: 100%; padding: 8px; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text-main);">
+            </div>
+            <div>
+                <label style="font-weight: bold; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--admin-text-main);">
+                    <input type="checkbox" id="tiffin-available" ${!isEdit || item.available !== false ? 'checked' : ''}> Available (In Stock)
+                </label>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="submit" class="btn" style="flex: 1;">Save</button>
+                <button type="button" class="btn" style="flex: 1; background-color: #95a5a6;" onclick="document.body.removeChild(this.closest('#custom-alert-page'))">Cancel</button>
+            </div>
+        </form>
+    `;
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+    
+    document.getElementById('tiffin-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('tiffin-id').value;
+        const payload = { name: document.getElementById('tiffin-name').value, price: Number(document.getElementById('tiffin-price').value), meta: document.getElementById('tiffin-meta').value, emoji: document.getElementById('tiffin-emoji').value, available: document.getElementById('tiffin-available').checked };
+        const token = localStorage.getItem('authToken');
+        const url = id ? `${API_BASE_URL}/api/admin/tiffin-menu/${id}` : `${API_BASE_URL}/api/admin/tiffin-menu`;
+        try {
+            const res = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
+            if (res.ok) { document.body.removeChild(overlay); showSystemToast('Success', id ? 'Tiffin updated.' : 'Tiffin added.'); loadAdminTiffin(); } 
+            else { showSystemToast('Error', 'Failed to save tiffin item.', 'error'); }
+        } catch (error) { showSystemToast('Error', 'Error connecting to server.', 'error'); }
+    };
+}
+
+async function deleteTiffinItem(id) {
+    if (!confirm('Are you sure you want to delete this tiffin item?')) return;
+    const token = localStorage.getItem('authToken');
+    try { const res = await fetch(`${API_BASE_URL}/api/admin/tiffin-menu/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) { showSystemToast('Success', 'Tiffin item deleted.'); loadAdminTiffin(); } else { showSystemToast('Error', 'Failed to delete item.', 'error'); } } catch (error) { showSystemToast('Error', 'Error connecting to server.', 'error'); }
 }
 
 async function deleteMenuItem(id) {
