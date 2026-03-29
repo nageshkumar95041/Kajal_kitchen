@@ -26,11 +26,18 @@
 
     <header id="home" class="hero">
         <div class="hero-content">
+            <div class="hero-tags">
+                <span class="hero-tag">HOMEMADE</span>
+                <span class="hero-tag">FRESH</span>
+                <span class="hero-tag">NOIDA NCR</span>
+            </div>
             <h1><span class="italic-line">Ghar Jaisa Khana,</span> <span class="bold-line">Delivered to You.</span></h1>
             <p>Missing home? Enjoy 100% homemade, fresh, and healthy meals prepared with love. No artificial flavors, just pure goodness.</p>
+            <div class="hero-delivery-badge">⚡ Delivered within 30 minutes of order</div>
             <div class="hero-cta">
                 <a href="#menu" class="btn">Order Now</a>
                 <a href="#menu" class="btn btn-secondary">View Menu</a>
+                <a href="subscription.html" class="btn btn-tiffin">Tiffin Plan ₹2,500/mo</a>
             </div>
             <div class="hero-stats">
                 <div class="stat-item">
@@ -42,7 +49,63 @@
                 <div class="stat-item">
                     <div class="stat-num">3 yr</div><div class="stat-label">Serving NCR</div>
                 </div>
+                <div class="stat-item">
+                    <div class="stat-num">0</div><div class="stat-label">ARTIFICIAL</div>
+                </div>
             </div>
+        </div>
+        <div class="hero-right">
+            <div class="hero-offer-strip">
+                <strong>🎁 NEW CUSTOMER OFFER:</strong> First tiffin FREE — try before you subscribe!
+            </div>
+            <div class="hero-tiffin-card" id="hero-tiffin-container">
+                <div class="hero-tiffin-header">
+                    <span>TODAY'S TIFFIN MENU</span>
+                    <span class="tiffin-status">● OPEN</span>
+                </div>
+                <div class="hero-tiffin-item">
+                    <div class="tiffin-item-info">
+                        <span class="tiffin-emoji">🍛</span>
+                        <div><div class="tiffin-item-name">Dal Makhani + Rice</div><div class="tiffin-item-meta">Lunch · Veg</div></div>
+                    </div>
+                    <div class="tiffin-item-action"><span class="tiffin-price">₹120</span><button class="tiffin-add-btn" onclick="addTiffinToCart('Dal Makhani + Rice', 120, event)">+</button></div>
+                </div>
+                <div class="hero-tiffin-item">
+                    <div class="tiffin-item-info">
+                        <span class="tiffin-emoji">🫓</span>
+                        <div><div class="tiffin-item-name">Aloo Paratha + Curd</div><div class="tiffin-item-meta">Breakfast · Veg</div></div>
+                    </div>
+                    <div class="tiffin-item-action"><span class="tiffin-price">₹80</span><button class="tiffin-add-btn" onclick="addTiffinToCart('Aloo Paratha + Curd', 80, event)">+</button></div>
+                </div>
+                <div class="hero-tiffin-item">
+                    <div class="tiffin-item-info">
+                        <span class="tiffin-emoji">🍲</span>
+                        <div><div class="tiffin-item-name">Paneer Sabzi + Roti</div><div class="tiffin-item-meta">Dinner · Veg</div></div>
+                    </div>
+                    <div class="tiffin-item-action"><span class="tiffin-price">₹130</span><button class="tiffin-add-btn" onclick="addTiffinToCart('Paneer Sabzi + Roti', 130, event)">+</button></div>
+                </div>
+            </div>
+            <div class="hero-delivery-zones">
+                <span class="zones-label">DELIVERING TO</span>
+                <span class="zone-pill">Noida Sector 130</span>
+                <span class="zone-pill">Noida Sector 135</span>
+                <span class="zone-pill">Wazidpur</span>
+            </div>
+            <div class="hero-reviews">
+                <div class="hero-review-card">
+                    <div class="review-stars">★★★★★</div>
+                    <p class="review-quote">"Best dal outside maa ki rasoi!"</p>
+                    <div class="review-author">— Priya S., Sector 130</div>
+                </div>
+                <div class="hero-review-card">
+                    <div class="review-stars">★★★★★</div>
+                    <p class="review-quote">"Finally ghar jaisa khana in Noida!"</p>
+                    <div class="review-author">— Rahul M., Wazidpur</div>
+                </div>
+            </div>
+            <a href="https://wa.me/917366952957" class="hero-wa-strip" target="_blank">
+                📱 Order on WhatsApp &rarr; <span>+91 XXXXX XXXXX</span>
+            </a>
         </div>
     </header>
 

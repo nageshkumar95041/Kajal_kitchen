@@ -10,12 +10,20 @@
 body {
     line-height: 1.6;
     color: #333;
-    padding-top: 80px; /* Accommodate fixed navbar */
+    padding-top: 75px; /* Accommodate fixed navbar */
+    overflow-x: hidden;
+    max-width: 100%;
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 html {
+    overflow-x: hidden;
+    max-width: 100%;
     font-size: 16px;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 /* Navbar */
@@ -163,19 +171,24 @@ html {
 
 /* Hero Section */
 .hero {
-    height: 100vh;
+    height: auto;
+    min-height: 100vh;
     margin-top: -80px; /* Counteract body padding for full-screen hero */
     background: 
         linear-gradient(105deg, rgba(8,4,1,0.90) 0%, rgba(15,8,2,0.72) 40%, rgba(8,4,1,0.35) 100%),
         radial-gradient(ellipse at center, transparent 40%, rgba(5,3,1,0.60) 100%),
         url('https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=1950&q=80') center/cover;
     background-attachment: fixed;
-    display: flex;
+    display: grid;
+    grid-template-columns: 6fr 4fr;
+    gap: 3rem;
     align-items: center;
-    justify-content: flex-start;
     text-align: left;
     color: #fff;
-    padding: 0 6%;
+    padding: 120px 6% 80px;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .hero h1 {
@@ -193,7 +206,7 @@ html {
     color: #E8A84C;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    display: block;
+    display: none; /* Replaced by hero-tags */
     margin-bottom: 14px;
     animation: fadeUp 0.6s 0.1s ease both;
 }
@@ -214,13 +227,33 @@ html {
 }
 
 .hero-content {
-    max-width: 600px;
+    max-width: 680px;
+}
+
+.hero-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    animation: fadeUp 0.6s 0.1s ease both;
+    flex-wrap: wrap;
+}
+
+.hero-tag {
+    background: rgba(224,123,57,0.15);
+    border: 0.5px solid #e07b39;
+    border-radius: 999px;
+    color: #e07b39;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 14px;
+    letter-spacing: 0.8px;
 }
 
 .hero-cta {
-    margin-top: 2rem;
+    margin-top: 1rem;
     display: flex;
-    gap: 1rem;
+    gap: 12px;
+    align-items: center;
     justify-content: flex-start;
     flex-wrap: wrap;
 }
@@ -235,7 +268,7 @@ html {
     max-width: 480px;
     margin-left: 0;
     margin-right: 0;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.2rem;
     text-align: left;
 }
 
@@ -309,6 +342,236 @@ html {
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* New Hero Additions */
+.hero-delivery-badge {
+    display: inline-block;
+    background: rgba(255, 200, 80, 0.09);
+    border: 1px solid rgba(255, 200, 80, 0.38);
+    color: #ffc850;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s 0.45s ease both;
+}
+
+.btn.btn-tiffin {
+    background: rgba(37, 211, 102, 0.12);
+    border: 1px solid rgba(37, 211, 102, 0.42);
+    color: #25D366;
+}
+.btn.btn-tiffin:hover {
+    background: rgba(37, 211, 102, 0.25);
+    color: #25D366;
+}
+
+.hero-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    animation: fadeUp 0.7s 0.4s ease both;
+    max-width: 480px;
+    width: 100%;
+    justify-self: end;
+    padding-top: 24px;
+}
+
+.hero-offer-strip {
+    background: linear-gradient(135deg, rgba(224,123,57,0.15) 0%, rgba(230,92,0,0.05) 100%);
+    border: 1px solid rgba(224,123,57,0.3);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.4;
+}
+.hero-offer-strip strong {
+    color: #e07b39;
+    font-weight: bold;
+}
+
+.hero-tiffin-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.hero-tiffin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.tiffin-status {
+    background: rgba(37, 211, 102, 0.15);
+    color: #25D366;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    border: 1px solid rgba(37, 211, 102, 0.3);
+}
+
+.hero-tiffin-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.hero-tiffin-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.tiffin-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.tiffin-emoji {
+    font-size: 22px;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
+}
+.tiffin-item-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+}
+.tiffin-item-meta {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 2px;
+}
+
+.tiffin-item-action {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.tiffin-price {
+    color: #e07b39;
+    font-weight: bold;
+    font-size: 14px;
+}
+.tiffin-add-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid #e07b39;
+    color: #e07b39;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    line-height: 1;
+    padding-bottom: 2px;
+}
+.tiffin-add-btn:hover {
+    background: #e07b39;
+    color: #fff;
+}
+
+.hero-delivery-zones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.zones-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-right: 4px;
+    font-weight: 600;
+}
+.zone-pill {
+    background: rgba(224, 123, 57, 0.1);
+    border: 1px solid rgba(224, 123, 57, 0.25);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.hero-reviews {
+    display: flex;
+    gap: 1rem;
+}
+.hero-review-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 14px;
+    flex: 1;
+}
+.review-stars {
+    color: #f1c40f;
+    font-size: 12px;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+.review-quote {
+    font-style: italic;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+.review-author {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.hero-wa-strip {
+    background: rgba(37, 211, 102, 0.15);
+    border: 1px solid rgba(37, 211, 102, 0.4);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    transition: background 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    white-space: normal;
+    word-break: break-word;
+}
+.hero-wa-strip span {
+    color: #25D366;
+    font-weight: bold;
+}
+.hero-wa-strip:hover {
+    background: rgba(37, 211, 102, 0.25);
+}
+
+@media (max-width: 1024px) {
+    .hero {
+        grid-template-columns: 1fr;
+        height: auto;
+        padding-top: 130px;
+        padding-bottom: 60px;
+    }
+    .hero-right {
+        justify-self: center;
+        max-width: 600px;
+        padding-top: 0;
+    }
 }
 
 .hero-content h1 {
@@ -1098,20 +1361,35 @@ footer a:hover {
     }
     .nav-links li {
         margin: 0.8rem 0;
-        font-size: 1.1rem;
+        font-size: 1.100;
     }
     .nav-links a {
         font-size: 18px !important;
         font-weight: 500;
     }
+    .hero,
+    .hero-content,
+    .hero-right {
+        padding-left: 16px;
+        padding-right: 16px;
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    .hero {
+        grid-template-columns: 1fr;
+    }
     .hero h1::before {
         font-size: 12px !important;
     }
-    .hero h1 .italic-line {
-        font-size: 48px;
-    }
+    .hero h1,
+    .hero h1 .italic-line,
     .hero h1 .bold-line {
-        font-size: 44px;
+        font-size: clamp(28px, 8vw, 52px);
+        white-space: normal;
+        word-break: break-word;
     }
     .hero p {
         font-size: 15px;
@@ -1123,6 +1401,36 @@ footer a:hover {
     }
     .btn.btn-secondary {
         padding: 14px 28px;
+    }
+        .hero-cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        width: 100%;
+        box-sizing: border-box;
+        }
+        .hero-cta .btn:first-child,
+        .hero-cta .btn-secondary {
+            flex: 1;
+        min-width: 0;
+            text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        }
+        .hero-cta .btn-tiffin {
+            width: 100%;
+            text-align: center;
+        }
+    .hero-stats {
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .stat-item {
+        padding-right: 16px;
+    }
+    .hero-reviews {
+        flex-direction: column;
     }
     .stat-num {
         font-size: 22px;

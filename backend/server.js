@@ -102,6 +102,7 @@ mongoose.connect(process.env.MONGODB_URI)
         console.log('Connected to MongoDB Database');
         seedAdmin();
         seedMenu();
+        seedTiffin();
     })
     .catch(err => console.error('MongoDB connection error:', err));
 
@@ -186,6 +187,15 @@ const menuItemSchema = new mongoose.Schema({
 });
 const MenuItem = mongoose.model('MenuItem', menuItemSchema);
 
+const tiffinItemSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    price: { type: Number, required: true },
+    meta: { type: String, default: 'Lunch · Veg' },
+    emoji: { type: String, default: '🍛' },
+    available: { type: Boolean, default: true }
+});
+const TiffinItem = mongoose.model('TiffinItem', tiffinItemSchema);
+
 // Seed Default Admin
 async function seedAdmin() {
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
@@ -252,6 +262,18 @@ async function seedMenu() {
             { name: 'Plain Curd', price: 40, description: 'Fresh, homemade yogurt.', category: "🍲 Main Course" }
         ]);
         console.log('Expanded Indian homestyle menu items seeded to database.');
+    }
+}
+
+async function seedTiffin() {
+    const count = await TiffinItem.countDocuments();
+    if (count === 0) {
+        await TiffinItem.insertMany([
+            { name: 'Dal Makhani + Rice', price: 120, meta: 'Lunch · Veg', emoji: '🍛' },
+            { name: 'Aloo Paratha + Curd', price: 80, meta: 'Breakfast · Veg', emoji: '🫓' },
+            { name: 'Paneer Sabzi + Roti', price: 130, meta: 'Dinner · Veg', emoji: '🍲' }
+        ]);
+        console.log('Default Tiffin items seeded to database.');
     }
 }
 
@@ -375,13 +397,50 @@ app.delete('/api/menu/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- Tiffin Menu Endpoints ---
+app.get('/api/tiffin-menu', async (req, res) => {
+    try {
+        const menu = await TiffinItem.find().lean();
+        res.json(menu);
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch tiffin menu.' });
+    }
+});
+
+app.post('/api/admin/tiffin-menu', authenticateAdmin, async (req, res) => {
+    try {
+        const newItem = await TiffinItem.create(req.body);
+        res.status(201).json({ success: true, item: newItem });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to create tiffin item. Ensure the name is unique.' });
+    }
+});
+
+app.put('/api/admin/tiffin-menu/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const updatedItem = await TiffinItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json({ success: true, item: updatedItem });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to update tiffin item.' });
+    }
+});
+
+app.delete('/api/admin/tiffin-menu/:id', authenticateAdmin, async (req, res) => {
+    try {
+        await TiffinItem.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'Tiffin item deleted.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to delete tiffin item.' });
+    }
+});
+
 app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const startOfWeek = new Date(today);
-        startOfWeek.setDate(startOfWeek.getDate() - today.getDay());
+        startOfWeek.setDate(startOfWeek.getDate() - 7); // Calculate past 7 rolling days
 
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
@@ -439,9 +498,13 @@ app.post('/api/create-stripe-checkout', optionalAuth, async (req, res) => {
 
     // Fetch current prices from the database securely
     const itemNames = items.map(i => String(i.name));
-    const dbItems = await MenuItem.find({ name: { $in: itemNames } });
+    const [dbItems, dbTiffinItems] = await Promise.all([
+        MenuItem.find({ name: { $in: itemNames } }),
+        TiffinItem.find({ name: { $in: itemNames } })
+    ]);
     const priceMap = {};
     dbItems.forEach(item => { priceMap[item.name] = item.price; });
+    dbTiffinItems.forEach(item => { priceMap[item.name] = item.price; });
 
     let total = items.reduce((sum, item) => {
         const price = priceMap[String(item.name)] || 0;
@@ -576,9 +639,13 @@ app.post('/api/checkout-cod', optionalAuth, async (req, res) => {
     }
 
     const itemNames = items.map(i => String(i.name));
-    const dbItems = await MenuItem.find({ name: { $in: itemNames } });
+    const [dbItems, dbTiffinItems] = await Promise.all([
+        MenuItem.find({ name: { $in: itemNames } }),
+        TiffinItem.find({ name: { $in: itemNames } })
+    ]);
     const priceMap = {};
     dbItems.forEach(item => { priceMap[item.name] = item.price; });
+    dbTiffinItems.forEach(item => { priceMap[item.name] = item.price; });
 
     let total = items.reduce((sum, item) => sum + ((priceMap[item.name] || 0) * (item.quantity || 1)), 0);
     if (couponCode === 'APNA50' && total >= 200) total -= 50;
