@@ -88,6 +88,16 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
+const BORZO_API_KEY = process.env.BORZO_API_KEY;
+const BORZO_ENV = process.env.BORZO_ENV || 'sandbox';
+const RESTAURANT_LAT = parseFloat(process.env.RESTAURANT_LAT);
+const RESTAURANT_LNG = parseFloat(process.env.RESTAURANT_LNG);
+const RESTAURANT_ADDRESS = process.env.RESTAURANT_ADDRESS;
+const RESTAURANT_PHONE = process.env.RESTAURANT_PHONE;
+const RESTAURANT_NAME = process.env.RESTAURANT_NAME || 'Kajal Ki Rasoi';
+
+const BORZO_API_BASE_URL = BORZO_ENV === 'production' ? 'https://api.borzodelivery.com/api/business/1.6' : 'https://robotapitest-in.borzodelivery.com/api/business/1.6';
+
 if (!SECRET_KEY || !EMAIL_USER || !EMAIL_PASS || !GOOGLE_CLIENT_ID || !STRIPE_SECRET_KEY || !STRIPE_PUBLISHABLE_KEY) {
     console.error("FATAL ERROR: A required secret is not defined in .env file.");
     process.exit(1);
@@ -95,6 +105,10 @@ if (!SECRET_KEY || !EMAIL_USER || !EMAIL_PASS || !GOOGLE_CLIENT_ID || !STRIPE_SE
 
 const stripe = Stripe(STRIPE_SECRET_KEY);
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+if (!BORZO_API_KEY || !RESTAURANT_LAT || !RESTAURANT_LNG || !RESTAURANT_ADDRESS || !RESTAURANT_PHONE) {
+    console.warn("WARNING: Borzo delivery environment variables are not fully configured. Delivery features will be disabled.");
+}
 
 // MongoDB Connection (Online / MongoDB Atlas)
 mongoose.connect(process.env.MONGODB_URI)
@@ -132,7 +146,17 @@ const orderSchema = new mongoose.Schema({
     status: { type: String, default: 'Pending', enum: ['Pending', 'Preparing', 'Out for Delivery', 'Completed', 'Rejected', 'Cancelled'], index: true },
     timestamp: { type: Date, default: Date.now, index: true },
     rating: { type: Number },
-    review: { type: String }
+    review: { type: String },
+    deliveryFee: { type: Number, default: 0 },
+    customerLat: { type: Number },
+    customerLng: { type: Number },
+    borzoOrderId: { type: String },
+    borzoTrackingUrl: { type: String },
+    borzoStatus: { type: String },
+    borzoCourier: {
+        name: String,
+        phone: String
+    }
 }, { toJSON: { virtuals: true } });
 const Order = mongoose.model('Order', orderSchema);
 
@@ -158,7 +182,10 @@ const cartSchema = new mongoose.Schema({
     customerName: { type: String, required: true },
     contact: { type: String },
     address: { type: String, required: true },
-    cart: { type: Object, required: true }
+    cart: { type: Object, required: true },
+    deliveryFee: { type: Number, default: 0 },
+    customerLat: { type: Number },
+    customerLng: { type: Number }
 });
 const TempCart = mongoose.model('TempCart', cartSchema);
 
@@ -286,6 +313,76 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+// Borzo Delivery Helper
+async function createBorzoDelivery(order) {
+    if (!BORZO_API_KEY) {
+        console.log(`Borzo API key not set. Skipping delivery creation for order ${order._id}.`);
+        return;
+    }
+
+    if (!order.customerLat || !order.customerLng) {
+        console.error(`Cannot create delivery for order ${order._id}: Missing customer coordinates.`);
+        // TODO: Notify admin about the failure (e.g., via WhatsApp or email)
+        return;
+    }
+
+    const payload = {
+        matter: `Homemade food - ${RESTAURANT_NAME}`,
+        vehicle_type_id: 8, // Motorcycle
+        points: [
+            { // Pickup point (Restaurant)
+                address: RESTAURANT_ADDRESS,
+                latitude: RESTAURANT_LAT,
+                longitude: RESTAURANT_LNG,
+                contact_person: {
+                    name: RESTAURANT_NAME,
+                    phone: RESTAURANT_PHONE
+                },
+                note: `Order #${String(order._id).slice(-5)}`
+            },
+            { // Drop-off point (Customer)
+                address: order.address,
+                latitude: order.customerLat,
+                longitude: order.customerLng,
+                contact_person: {
+                    name: order.customerName,
+                    phone: order.contact
+                },
+                note: `Payment: ${order.paymentMethod}. Total: ₹${order.total}.`
+            }
+        ]
+    };
+
+    try {
+        const response = await fetch(`${BORZO_API_BASE_URL}/create-order`, {
+            method: 'POST',
+            headers: { 'X-DV-Auth-Token': BORZO_API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error(`Borzo API Error for order ${order._id}. Non-JSON response:`, text);
+            return null;
+        }
+
+        if (response.ok && data.is_successful) {
+            const borzoOrder = data.order;
+            order.borzoOrderId = borzoOrder.order_id;
+            order.borzoTrackingUrl = borzoOrder.tracking_url;
+            order.borzoStatus = borzoOrder.status_name;
+            await order.save();
+            console.log(`Borzo delivery created for order ${order._id}. Borzo ID: ${borzoOrder.order_id}`);
+        } else {
+            console.error(`Borzo API Error for order ${order._id}:`, data.message || data);
+        }
+    } catch (error) {
+        console.error(`Failed to connect to Borzo API for order ${order._id}:`, error);
+    }
+}
 
 function authenticateAdmin(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -488,7 +585,7 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
 });
 
 app.post('/api/create-stripe-checkout', optionalAuth, async (req, res) => {
-    const { items, customerName, contact, address, successUrl, cancelUrl, couponCode } = req.body;
+    const { items, customerName, contact, address, successUrl, cancelUrl, couponCode, deliveryFee, customerLat, customerLng } = req.body;
     if (!Array.isArray(items)) {
         return res.status(400).json({ error: 'Invalid cart data' });
     }
@@ -506,24 +603,25 @@ app.post('/api/create-stripe-checkout', optionalAuth, async (req, res) => {
     dbItems.forEach(item => { priceMap[item.name] = item.price; });
     dbTiffinItems.forEach(item => { priceMap[item.name] = item.price; });
 
-    let total = items.reduce((sum, item) => {
+    let subtotal = items.reduce((sum, item) => {
         const price = priceMap[String(item.name)] || 0;
         const qty = item.quantity || 1;
         return sum + (price * qty);
     }, 0);
 
-    if (couponCode === 'APNA50' && total >= 200) total -= 50;
-    if (total > 0 && total < 199) total += 40; // Delivery fee
+    if (couponCode === 'APNA50' && subtotal >= 200) subtotal -= 50;
+    
+    const finalTotal = subtotal + (deliveryFee || 0);
 
-    if (total === 0) {
-        return res.status(400).json({ error: 'Cannot process an empty cart.' });
+    if (finalTotal <= 0) {
+        return res.status(400).json({ error: 'Cannot process an empty or free cart via Stripe.' });
     }
 
     const safeName = customerName && customerName.trim() ? customerName.trim() : 'Guest';
 
     try {
         const frontendUrl = process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:3000';
-        
+
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{
@@ -532,7 +630,7 @@ app.post('/api/create-stripe-checkout', optionalAuth, async (req, res) => {
                     product_data: {
                         name: 'Kajal Ki Rasoi Order',
                     },
-                    unit_amount: Math.round(total * 100),
+                    unit_amount: Math.round(finalTotal * 100),
                 },
                 quantity: 1,
             }],
@@ -548,7 +646,10 @@ app.post('/api/create-stripe-checkout', optionalAuth, async (req, res) => {
             customerName: safeName,
             contact: contact,
             address: address.trim(),
-            cart: { items, total }
+            cart: { items, total: finalTotal },
+            deliveryFee: deliveryFee || 0,
+            customerLat,
+            customerLng
         });
 
         res.json({ id: session.id });
@@ -625,7 +726,7 @@ app.post('/api/subscribe', optionalAuth, async (req, res) => {
 });
 
 app.post('/api/checkout-cod', optionalAuth, async (req, res) => {
-    const { items, customerName, contact, address, couponCode } = req.body;
+    const { items, customerName, contact, address, couponCode, deliveryFee, customerLat, customerLng } = req.body;
     if (!Array.isArray(items) || !address || !customerName) return res.status(400).json({ error: 'Missing details' });
 
     if (!req.user) {
@@ -647,9 +748,9 @@ app.post('/api/checkout-cod', optionalAuth, async (req, res) => {
     dbItems.forEach(item => { priceMap[item.name] = item.price; });
     dbTiffinItems.forEach(item => { priceMap[item.name] = item.price; });
 
-    let total = items.reduce((sum, item) => sum + ((priceMap[item.name] || 0) * (item.quantity || 1)), 0);
-    if (couponCode === 'APNA50' && total >= 200) total -= 50;
-    if (total > 0 && total < 199) total += 40; 
+    let subtotal = items.reduce((sum, item) => sum + ((priceMap[item.name] || 0) * (item.quantity || 1)), 0);
+    if (couponCode === 'APNA50' && subtotal >= 200) subtotal -= 50;
+    const total = subtotal + (deliveryFee || 0);
 
     const newOrder = await Order.create({
         userId: req.user ? req.user.id : null,
@@ -658,10 +759,16 @@ app.post('/api/checkout-cod', optionalAuth, async (req, res) => {
         address: address.trim(),
         items: items,
         total: total,
+        deliveryFee: deliveryFee || 0,
+        customerLat,
+        customerLng,
         paymentMethod: 'COD'
     });
     
     io.emit('orderUpdate', { type: 'NEW_ORDER' });
+
+    await createBorzoDelivery(newOrder);
+
     res.json({ success: true, orderId: newOrder._id });
 });
 
@@ -872,6 +979,9 @@ async function processSuccessfulPayment(orderId) {
             address: tempCart.address,
             items: tempCart.cart.items,
             total: tempCart.cart.total,
+            deliveryFee: tempCart.deliveryFee,
+            customerLat: tempCart.customerLat,
+            customerLng: tempCart.customerLng,
         });
 
         const emailContact = tempCart.contact && tempCart.contact.includes('@') ? tempCart.contact : null;
@@ -895,6 +1005,8 @@ async function processSuccessfulPayment(orderId) {
         }
 
         io.emit('orderUpdate', { type: 'NEW_ORDER' });
+
+        await createBorzoDelivery(newOrder);
     }
 
     // Check if it was a Subscription Checkout
@@ -944,6 +1056,121 @@ app.post('/api/verify-session', authenticateUser, async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to verify session' });
+    }
+});
+
+app.post('/api/delivery/estimate', async (req, res) => {
+    if (!BORZO_API_KEY) {
+        return res.status(503).json({ success: false, error: "Delivery service temporarily unavailable." });
+    }
+    const { customerLat, customerLng, customerAddress } = req.body;
+    if (!customerLat || !customerLng || !customerAddress) {
+        return res.status(400).json({ success: false, error: 'Customer location is required.' });
+    }
+
+    const payload = {
+        matter: `Food Delivery`, // Borzo requires this field for calculations too
+        vehicle_type_id: 8,
+        points: [
+            { address: RESTAURANT_ADDRESS, latitude: RESTAURANT_LAT, longitude: RESTAURANT_LNG },
+            { address: customerAddress, latitude: parseFloat(customerLat), longitude: parseFloat(customerLng) }
+        ]
+    };
+
+    try {
+        const response = await fetch(`${BORZO_API_BASE_URL}/calculate-order`, {
+            method: 'POST',
+            headers: { 'X-DV-Auth-Token': BORZO_API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("Borzo API returned non-JSON for estimate:", text);
+            return res.status(500).json({ success: false, error: "Delivery API returned an invalid response." });
+        }
+
+        if (response.ok && data.is_successful) {
+            res.json({
+                success: true,
+                deliveryFee: data.order.payment_amount,
+                estimatedTime: "25-40 min" // Borzo API doesn't seem to return ETA in calculate
+            });
+        } else {
+            console.error("Borzo estimate error:", data);
+            const warningMsg = data.parameter_warnings ? Object.values(data.parameter_warnings).join(', ') : null;
+            res.status(400).json({ success: false, error: warningMsg || data.message || "Could not estimate delivery." });
+        }
+    } catch (error) {
+        console.error("Network error connecting to Borzo for estimate:", error);
+        res.status(500).json({ success: false, error: "Error connecting to delivery service." });
+    }
+});
+
+app.get('/api/delivery/track/:orderId', authenticateUser, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.orderId).lean();
+        if (!order || (order.userId !== req.user.id && req.user.role !== 'admin')) {
+            return res.status(404).json({ success: false, message: 'Order not found.' });
+        }
+        if (!order.borzoOrderId) {
+            return res.status(404).json({ success: false, message: 'Delivery not yet dispatched.' });
+        }
+
+        const response = await fetch(`${BORZO_API_BASE_URL}/orders?order_id=${order.borzoOrderId}`, {
+            headers: { 'X-DV-Auth-Token': BORZO_API_KEY }
+        });
+        
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            return res.status(500).json({ success: false, message: 'Invalid response from tracking service.' });
+        }
+
+        if (response.ok && data.is_successful) {
+            // Borzo's /orders endpoint returns an array of orders
+            const borzoOrder = data.order || (data.orders && data.orders[0]);
+            
+            // Update our DB with the latest status from polling
+            await Order.updateOne({ _id: order._id }, {
+                $set: {
+                    borzoStatus: borzoOrder.status_name,
+                    'borzoCourier.name': borzoOrder.courier?.name,
+                    'borzoCourier.phone': borzoOrder.courier?.phone,
+                }
+            });
+
+            res.json({
+                success: true,
+                status: borzoOrder.status_name,
+                courier: borzoOrder.courier, // { name, phone, photo_url }
+                eta: borzoOrder.delivery_eta_minutes ? `${borzoOrder.delivery_eta_minutes} min` : 'Calculating...',
+                trackingUrl: order.borzoTrackingUrl
+            });
+        } else {
+            res.status(500).json({ success: false, message: 'Could not fetch tracking details.' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error while tracking order.' });
+    }
+});
+
+app.post('/api/delivery/create-order/:orderId', authenticateAdmin, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.orderId);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+        if (order.borzoOrderId) return res.status(400).json({ success: false, message: 'Delivery already created for this order.' });
+
+        await createBorzoDelivery(order);
+        
+        res.json({ success: true, message: 'Delivery creation initiated.', borzoOrderId: order.borzoOrderId });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to manually create delivery.' });
     }
 });
 
@@ -1220,6 +1447,44 @@ app.post('/api/contact', apiLimiter, async (req, res) => {
     } catch (error) {
         console.error('Contact Form Error:', error);
         res.status(500).json({ success: false, message: 'Failed to send the message. Please try again later.' });
+    }
+});
+
+app.post('/api/delivery/webhook', express.json(), async (req, res) => {
+    const { order_id, status_name, courier } = req.body;
+    console.log(`Received Borzo webhook for order ${order_id}, status: ${status_name}`);
+
+    if (!order_id) return res.status(400).send('Missing order_id');
+
+    try {
+        const update = {
+            borzoStatus: status_name,
+        };
+        if (courier) {
+            update['borzoCourier.name'] = courier.name;
+            update['borzoCourier.phone'] = courier.phone;
+        }
+
+        // Sync our internal status with Borzo's
+        if (status_name === 'in_process') update.status = 'Preparing';
+        if (status_name === 'picked_up') update.status = 'Out for Delivery';
+        if (status_name === 'completed') update.status = 'Completed';
+        if (status_name === 'canceled') update.status = 'Cancelled';
+
+        const updatedOrder = await Order.findOneAndUpdate(
+            { borzoOrderId: order_id },
+            { $set: update },
+            { new: true }
+        );
+
+        if (updatedOrder) {
+            io.emit('orderUpdate', { type: 'STATUS_UPDATE', orderId: updatedOrder._id, status: updatedOrder.status, borzoStatus: status_name });
+        }
+
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('Error processing Borzo webhook:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
