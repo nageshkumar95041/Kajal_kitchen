@@ -1088,6 +1088,25 @@ async function loadAdminDashboardStats() {
     }
 }
 
+window.createManualDelivery = async function(orderId) {
+    const token = localStorage.getItem('authToken');
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/delivery/create-order/${orderId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showSystemToast('Success', 'Borzo delivery creation initiated.');
+            loadAdminOrders(); // Refresh view
+        } else {
+            showSystemToast('Error', data.message || 'Failed to create delivery.', 'error');
+        }
+    } catch (error) {
+        showSystemToast('Error', 'Server error.', 'error');
+    }
+}
+
 let currentAdminOrderFilter = 'All';
 
 async function loadAdminOrders(filter = currentAdminOrderFilter) {
@@ -1141,6 +1160,25 @@ async function loadAdminOrders(filter = currentAdminOrderFilter) {
         const ordersHtml = orders.map(order => {
             const safeId = order._id || order.id || '00000';
             const status = order.status || 'Pending';
+
+            let borzoStatusBadge = '';
+            if (order.borzoStatus) {
+                let color = '#6b7280'; // default
+                const st = order.borzoStatus.toLowerCase();
+                if (st.includes('process') || st.includes('picked') || st.includes('way')) color = '#3b82f6';
+                if (st.includes('completed')) color = '#22c55e';
+                if (st.includes('cancel') || st.includes('return')) color = '#ef4444';
+                borzoStatusBadge = `<span style="background: ${color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-left: 8px;">Borzo: ${escapeHTML(order.borzoStatus)}</span>`;
+            }
+
+            let borzoActions = '';
+            if (!order.borzoOrderId && ['Pending', 'Preparing'].includes(order.status)) {
+                borzoActions = `<button class="btn-order" style="padding: 6px 12px; background-color: #16a34a; color: white; border: none; border-radius: 6px;" onclick="createManualDelivery('${safeId}')">Create Delivery</button>`;
+            }
+            if (order.borzoTrackingUrl) {
+                borzoActions += ` <a href="${order.borzoTrackingUrl}" target="_blank" class="btn-order" style="padding: 6px 12px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; text-decoration: none;">Track Borzo</a>`;
+            }
+
             const statusClass = status.toLowerCase().replace(/ /g, '-');
             const items = Array.isArray(order.items) ? order.items : [];
             const itemsList = items.map(i => `
@@ -1154,6 +1192,11 @@ async function loadAdminOrders(filter = currentAdminOrderFilter) {
 
             const rawName = order.customerName || 'Guest';
             const formattedName = rawName.toLowerCase().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '').join(' ');
+
+            let borzoCourierInfo = '';
+            if (order.borzoCourier && order.borzoCourier.name) {
+                borzoCourierInfo = `<p style="margin: 0 0 4px 0;"><strong>Courier:</strong> ${escapeHTML(order.borzoCourier.name)} (<a href="tel:${escapeHTML(order.borzoCourier.phone)}" style="color: #e67e22; text-decoration: none;">${escapeHTML(order.borzoCourier.phone)}</a>)</p>`;
+            }
 
             let actionButtons = '';
             switch (status) {
@@ -1180,12 +1223,13 @@ async function loadAdminOrders(filter = currentAdminOrderFilter) {
                 <div class="order-card status-${statusClass}">
                     <div class="order-header">
                         <h3 style="margin:0; color: var(--admin-text-main);">Order #${escapeHTML(safeId.toString().slice(-5))}</h3>
-                        <span class="status ${statusClass}">${escapeHTML(status)}</span>
+                        <div><span class="status ${statusClass}">${escapeHTML(status)}</span>${borzoStatusBadge}</div>
                     </div>
                     <div style="margin-bottom: 12px; font-size: 0.95rem; color: var(--admin-text-main);">
                         <p style="margin: 0 0 4px 0;"><strong>Customer:</strong> ${escapeHTML(formattedName)}</p>
                         <p style="margin: 0 0 4px 0;"><strong>Contact:</strong> <a href="tel:${escapeHTML(order.contact || '')}" style="color: #e67e22; text-decoration: none;">${escapeHTML(order.contact || 'N/A')}</a></p>
                         <p style="margin: 0 0 4px 0;"><strong>Payment:</strong> <span style="background: var(--admin-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.85rem;">${escapeHTML(order.paymentMethod || 'Online')}</span></p>
+                        ${borzoCourierInfo}
                         <p style="margin: 0 0 4px 0;"><strong>Address:</strong> ${displayAddress} <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address || '')}" target="_blank" class="navigate-link" title="Click to navigate on Google Maps">📍 Navigate</a></p>
                     </div>
                     ${order.rating ? `<p style="color: #f39c12; margin: 0.5rem 0;"><strong>Rating:</strong> ${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)} <br><span style="color: #555; font-size: 0.9rem; font-style: italic;">"${escapeHTML(order.review || '')}"</span></p>` : ''}
@@ -1199,6 +1243,7 @@ async function loadAdminOrders(filter = currentAdminOrderFilter) {
                         </div>
                         <div class="order-actions">
                             ${actionButtons}
+                            ${borzoActions}
                         </div>
                     </div>
                 </div>
@@ -1491,6 +1536,40 @@ async function viewCustomerHistory(contact, name) {
     }
 }
 
+let trackingInterval = null;
+function startOrderTracking(orderId) {
+    if (trackingInterval) clearInterval(trackingInterval);
+
+    const track = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/delivery/track/${orderId}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    const activeContainer = document.getElementById('active-order-container');
+                    const order = await (await fetch(`${API_BASE_URL}/api/orders/${orderId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }})).json();
+                    
+                    if (activeContainer && order.success) {
+                        activeContainer.innerHTML = generateActiveOrderHTML(order.order);
+                    }
+
+                    if (data.status && ['completed', 'canceled', 'returned'].includes(data.status.toLowerCase())) {
+                        clearInterval(trackingInterval);
+                        setTimeout(loadMyOrders, 5000);
+                    }
+                }
+            } else { clearInterval(trackingInterval); }
+        } catch (error) {
+            console.error("Tracking poll failed:", error);
+            clearInterval(trackingInterval);
+        }
+    };
+    track(); // Initial call
+    trackingInterval = setInterval(track, 30000); // Poll every 30 seconds
+}
+
 async function loadMyOrders() {
     const container = document.getElementById('my-orders-container');
     const activeContainer = document.getElementById('active-order-container');
@@ -1530,7 +1609,9 @@ async function loadMyOrders() {
         if (activeContainer) {
             if (activeOrders.length > 0) {
                 activeContainer.innerHTML = generateActiveOrderHTML(activeOrders[0]);
-
+                if (activeOrders[0].borzoOrderId) {
+                    startOrderTracking(activeOrders[0]._id);
+                }
             } else {
                 activeContainer.innerHTML = '';
             }
@@ -1552,27 +1633,49 @@ async function loadMyOrders() {
 }
 
 function generateActiveOrderHTML(order) {
+    // Borzo statuses: new, in_process, picked_up, on_the_way, arrived_at_point, completed, canceled, returned
+    const borzoToInternalMap = {
+        'new': 'Pending',
+        'in_process': 'Preparing',
+        'picked_up': 'Out for Delivery',
+        'on_the_way': 'Out for Delivery',
+        'arrived_at_point': 'Out for Delivery',
+        'completed': 'Completed'
+    };
+    const internalStatus = borzoToInternalMap[order.borzoStatus] || order.status;
+
     const statuses = ['Pending', 'Preparing', 'Out for Delivery', 'Completed'];
-    const currentIndex = statuses.indexOf(order.status);
-    const fillPercentage = currentIndex > 0 ? (currentIndex / (statuses.length - 1)) * 100 : 0;
+    const currentIndex = statuses.indexOf(internalStatus);
+    const fillPercentage = currentIndex >= 0 ? (currentIndex / (statuses.length - 1)) * 100 : 0;
     
     const safeId = order._id || order.id || '00000';
     const itemsList = order.items.map(i => `${i.quantity || 1}x ${escapeHTML(i.name)}`).join(', ');
 
-    let eta = "35 mins";
-    if (order.status === 'Preparing') eta = "20 mins";
-    if (order.status === 'Out for Delivery') eta = "10 mins";
+    const eta = order.eta || (order.status === 'Pending' ? 'Assigning courier...' : 'Calculating...');
 
-    // Mock arrival time for demonstration
-    const arrivalTime = new Date(Date.now() + 35 * 60 * 1000).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
-
+    let courierHTML = '';
+    if (order.borzoCourier && order.borzoCourier.name) {
+        courierHTML = `
+            <div style="margin-top: 2.5rem; background: var(--admin-bg); padding: 1rem; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #fff7ed; color: #c2410c; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">${order.borzoCourier.name.charAt(0)}</div>
+                    <div>
+                        <p style="font-weight: bold; color: var(--admin-text-main); margin: 0;">${escapeHTML(order.borzoCourier.name)}</p>
+                        <p style="font-size: 0.85rem; color: var(--admin-text-muted); margin: 0;">Your delivery partner</p>
+                    </div>
+                </div>
+                <a href="tel:${escapeHTML(order.borzoCourier.phone)}" style="width: 40px; height: 40px; border-radius: 50%; background: #f97316; color: white; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5h-1.528a13.5 13.5 0 01-11.472-11.472H2A1.5 1.5 0 012 3.5z" clip-rule="evenodd"></path></svg>
+                </a>
+            </div>
+        `;
+    }
     return `
         <div class="active-order-card">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
                 <div>
                     <p style="font-size: 0.9rem; color: var(--admin-text-muted); margin-bottom: 0;">Estimated Delivery</p>
                     <p style="font-size: 2.2rem; font-weight: bold; color: #2ecc71; margin-top: 0; line-height: 1;">${eta}</p>
-                    <p style="font-size: 13px; color: #888; margin-top: -5px;">Arrives by ${arrivalTime}</p>
                 </div>
                 <div class="hygiene-badge">✨ Max Safety & Hygiene</div>
             </div>
@@ -1581,25 +1684,14 @@ function generateActiveOrderHTML(order) {
                 <div class="progress-fill" style="width: ${fillPercentage}%"></div>
                 ${statuses.map((status, index) => {
                     let stepClass = 'progress-step';
-                    let icon = '';
+                    let icon = '...';
                     if (index < currentIndex) { stepClass += ' completed'; icon = '✓'; } 
-                    else if (index === currentIndex) { stepClass += ' active'; icon = '🍲'; }
+                    else if (index === currentIndex) { stepClass += ' active'; icon = '...'; }
                     return `<div class="${stepClass}">${icon}<span class="step-label">${status}</span></div>`;
                 }).join('')}
             </div>
 
-            <div style="margin-top: 2.5rem; background: var(--admin-bg); padding: 1rem; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #fff7ed; color: #c2410c; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;">R</div>
-                    <div>
-                        <p style="font-weight: bold; color: var(--admin-text-main); margin: 0;">Ravi Kumar</p>
-                        <p style="font-size: 0.85rem; color: var(--admin-text-muted); margin: 0;">Your delivery partner</p>
-                    </div>
-                </div>
-                <a href="tel:+919876543210" style="width: 40px; height: 40px; border-radius: 50%; background: #f97316; color: white; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5h-1.528a13.5 13.5 0 01-11.472-11.472H2A1.5 1.5 0 012 3.5z" clip-rule="evenodd"></path></svg>
-                </a>
-            </div>
+            ${courierHTML}
 
             <div style="margin-top: 1.5rem; background: var(--admin-bg); padding: 1rem; border-radius: 10px;">
                 <div style="display: flex; justify-content: space-between;">
@@ -1618,7 +1710,7 @@ function generateActiveOrderHTML(order) {
                     </svg>
                     Call Support
                 </button>
-                ${order.status === 'Out for Delivery' ? `<button class="btn" style="padding: 8px 20px;" onclick="trackDelivery('${safeId}')">📍 Track Map</button>` : ''}
+                ${order.borzoTrackingUrl ? `<a href="${order.borzoTrackingUrl}" target="_blank" class="btn" style="padding: 8px 20px; text-decoration: none;">📍 Track on Map</a>` : ''}
             </div>
             <p style="font-size: 11px; color: #888; text-align: center; margin-top: 8px;">You can cancel within 2 minutes of placing the order.</p>
         </div>
@@ -2298,6 +2390,14 @@ async function initializePaymentPage() {
         locateBtn.addEventListener('click', openLocationPickerMap);
     }
 
+    // Add blur listeners to address fields to trigger delivery estimation
+    const addressFields = ['address-flat', 'address-area', 'address-city', 'address-pincode'];
+    addressFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('blur', getDeliveryEstimate);
+    });
+
+
     form.addEventListener('submit', async (event) => {
         await processCheckout(event, customerContact);
     });
@@ -2328,8 +2428,8 @@ function applyCoupon() {
 
 function updatePaymentSummary(baseTotal, discount = 0) {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    let delivery = (baseTotal > 0 && baseTotal < 199) ? 40 : 0;
-    let finalTotal = baseTotal - discount + delivery;
+    let deliveryFee = Number(document.getElementById('delivery-fee')?.value) || 0;
+    let finalTotal = baseTotal - discount + deliveryFee;
     
     const summaryEl = document.getElementById('checkout-summary');
     if (summaryEl) {
@@ -2337,7 +2437,7 @@ function updatePaymentSummary(baseTotal, discount = 0) {
         summaryEl.innerHTML = `
             <strong>${count} Item(s)</strong> | Subtotal: ₹${baseTotal} <br>
             ${discount > 0 ? `<span style="color:#27ae60;">Discount: -₹${discount}</span><br>` : ''}
-            ${delivery > 0 ? `<span style="color:#e74c3c;">Delivery: +₹${delivery}</span><br>` : '<span style="color:#27ae60;">Delivery: FREE</span><br>'}
+            ${deliveryFee > 0 ? `<span style="color:#e74c3c;">Delivery: +₹${deliveryFee}</span><br>` : (baseTotal > 0 ? '<span style="color:#27ae60;">Delivery: FREE</span><br>' : '')}
             <span style="color: #e67e22; font-size: 1.5rem; font-weight: bold; display: inline-block; margin-top: 5px;">Total: ₹${finalTotal}</span>
         `;
     }
@@ -2349,6 +2449,71 @@ function updatePaymentSummary(baseTotal, discount = 0) {
         } else {
             payBtn.innerText = `Pay ₹${finalTotal} Securely`;
         }
+    }
+}
+
+async function getDeliveryEstimate() {
+    // This function is called on blur from address fields
+    let lat = document.getElementById('customer-lat').value;
+    let lng = document.getElementById('customer-lng').value;
+    const flat = document.getElementById('address-flat')?.value.trim() || '';
+    const area = document.getElementById('address-area')?.value.trim() || '';
+    const city = document.getElementById('address-city')?.value.trim() || '';
+    const pincode = document.getElementById('address-pincode')?.value.trim() || '';
+    const fullAddress = `${flat}, ${area}, ${city}, ${pincode}`;
+
+    const estimateMsgEl = document.getElementById('delivery-estimate-msg');
+    if (!flat || !area || !city || !pincode) {
+        if (estimateMsgEl) estimateMsgEl.textContent = '';
+        return;
+    }
+
+    if (estimateMsgEl) estimateMsgEl.textContent = 'Calculating delivery fee...';
+
+    // Auto-geocode if map locator wasn't used
+    if (!lat || !lng) {
+        try {
+            const searchQ = encodeURIComponent(`${area}, ${city}, ${pincode}`);
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${searchQ}&limit=1`);
+            const geoData = await geoRes.json();
+            if (geoData && geoData.length > 0) {
+                lat = geoData[0].lat;
+                lng = geoData[0].lon;
+                document.getElementById('customer-lat').value = lat;
+                document.getElementById('customer-lng').value = lng;
+            } else {
+                if (estimateMsgEl) estimateMsgEl.textContent = 'Please use the 📍 Map Locator to confirm your location.';
+                return;
+            }
+        } catch (e) {
+            console.log("Geocoding failed", e);
+        }
+    }
+
+    if (!lat || !lng) return;
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/delivery/estimate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customerLat: lat, customerLng: lng, customerAddress: fullAddress })
+        });
+        const data = await res.json();
+        const deliveryFeeInput = document.getElementById('delivery-fee');
+        if (data.success) {
+            deliveryFeeInput.value = data.deliveryFee;
+            if (estimateMsgEl) estimateMsgEl.innerHTML = `✅ Estimated delivery: ${data.estimatedTime} &middot; <strong>₹${data.deliveryFee} delivery fee</strong>`;
+        } else {
+            deliveryFeeInput.value = '0';
+            if (estimateMsgEl) estimateMsgEl.textContent = data.error || 'Could not estimate delivery to this address.';
+        }
+    } catch (error) {
+        if (estimateMsgEl) estimateMsgEl.textContent = 'Delivery service unavailable.';
+    } finally {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let total = cart.reduce((sum, i) => sum + i.price * (i.quantity || 1), 0);
+        let discount = (appliedCoupon === 'APNA50' && total >= 200) ? 50 : 0;
+        updatePaymentSummary(total, discount);
     }
 }
 
@@ -2441,6 +2606,10 @@ function initLocationPickerMap() {
         const pos = marker.getLatLng();
         document.body.removeChild(overlay);
         
+        // Set lat/lng in hidden fields
+        document.getElementById('customer-lat').value = pos.lat;
+        document.getElementById('customer-lng').value = pos.lng;
+
         const locateBtn = document.getElementById('locate-btn');
         if (locateBtn) locateBtn.innerText = 'Locating...';
 
@@ -2468,6 +2637,9 @@ function initLocationPickerMap() {
             if (locateBtn) {
                 locateBtn.innerText = '📍 Map Located';
                 locateBtn.style.backgroundColor = '#2ecc71';
+
+                // Trigger estimate after filling address
+                await getDeliveryEstimate();
             }
         } catch (e) {
             if (locateBtn) locateBtn.innerText = '📍 Map Locator';
@@ -2480,6 +2652,9 @@ async function processCheckout(event, savedContactStr) {
     event.preventDefault();
     const customerName = document.getElementById('card-name').value;
     const guestContact = document.getElementById('guest-contact')?.value || '';
+    const customerLat = document.getElementById('customer-lat').value;
+    const customerLng = document.getElementById('customer-lng').value;
+    const deliveryFee = Number(document.getElementById('delivery-fee').value);
     const payMethod = (document.querySelector('input[name="pay_method"]:checked')?.value || 'online').toLowerCase();
     
     const flat = document.getElementById('address-flat')?.value.trim() || '';
@@ -2500,6 +2675,10 @@ async function processCheckout(event, savedContactStr) {
     }
     if (!flat || !area || !city || !pincode) {
         document.getElementById('payment-message').textContent = 'Please complete all required delivery address fields!';
+        return;
+    }
+    if (!customerLat || !customerLng) {
+        document.getElementById('payment-message').textContent = 'Please use the "📍 Map Locator" button to confirm your delivery location.';
         return;
     }
     
@@ -2532,7 +2711,10 @@ async function processCheckout(event, savedContactStr) {
         address: deliveryAddress,
         couponCode: appliedCoupon,
         successUrl: successUrl,
-        cancelUrl: cancelUrl
+        cancelUrl: cancelUrl,
+        deliveryFee,
+        customerLat,
+        customerLng
     };
 
     if (payMethod === 'cod') {

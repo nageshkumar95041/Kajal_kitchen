@@ -31,6 +31,10 @@
                 <!-- Summary dynamically injected here -->
             </div>
             <form id="payment-form" class="payment-form">
+                <input type="hidden" id="customer-lat">
+                <input type="hidden" id="customer-lng">
+                <input type="hidden" id="delivery-fee" value="0">
+
                 <input type="text" id="card-name" placeholder="Full Name" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
                 
                 <div id="guest-contact-section">
@@ -42,13 +46,14 @@
                     <h3 style="font-size: 1.1rem; color: #2c3e50;">Delivery Address</h3>
                     <button type="button" id="locate-btn" style="background: #e67e22; color: #fff; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background 0.3s;">📍 Map Locator</button>
                 </div>
-                <input type="text" id="address-flat" placeholder="Flat, House no., Building, Apartment" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
-                <input type="text" id="address-area" placeholder="Area, Street, Sector, Village" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                <input type="text" id="address-flat" placeholder="Flat, House no., Building, Apartment" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;" onblur="getDeliveryEstimate()">
+                <input type="text" id="address-area" placeholder="Area, Street, Sector, Village" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;" onblur="getDeliveryEstimate()">
                 <input type="text" id="address-landmark" placeholder="Nearby Landmark (Optional)" style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
                 <div class="form-row">
-                    <input type="text" id="address-city" placeholder="Town/City" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
-                    <input type="text" id="address-pincode" placeholder="Pincode" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">
+                    <input type="text" id="address-city" placeholder="Town/City" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;" onblur="getDeliveryEstimate()">
+                    <input type="text" id="address-pincode" placeholder="Pincode" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;" onblur="getDeliveryEstimate()">
                 </div>
+                <div id="delivery-estimate-msg" style="font-size: 0.9rem; color: #27ae60; font-weight: bold; margin-top: 5px; text-align: center;"></div>
                 
                 <h3 style="font-size: 1.1rem; color: #2c3e50; margin-top: 1rem;">Have a Coupon?</h3>
                 <div style="display: flex; gap: 10px;">
