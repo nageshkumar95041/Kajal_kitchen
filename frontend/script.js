@@ -2424,6 +2424,17 @@ async function initializePaymentPage() {
         if (el) el.addEventListener('blur', getDeliveryEstimate);
     });
 
+    // Add listener to hide flat helper text on input
+    const flatInput = document.getElementById('address-flat');
+    if (flatInput) {
+        flatInput.addEventListener('input', () => {
+            const flatHelper = document.getElementById('flat-helper-text');
+            if (flatHelper && flatHelper.style.display !== 'none') {
+                flatHelper.style.display = 'none';
+            }
+        });
+    }
+
 
     form.addEventListener('submit', async (event) => {
         await processCheckout(event, customerContact);
@@ -2432,6 +2443,7 @@ async function initializePaymentPage() {
 
 /* --- Google Maps Places Autocomplete - New Implementation --- */
 let autocompleteService;
+let placesService;
 let geocoder;
 let sessionToken;
 let debounceTimer;
@@ -2446,22 +2458,40 @@ function initMaps() {
     // 2. Only call new services INSIDE the initMaps() callback
     autocompleteService = new google.maps.places.AutocompleteService();
     geocoder = new google.maps.Geocoder();
+    const map = new google.maps.Map(document.createElement('div'));
+    placesService = new google.maps.places.PlacesService(map);
     sessionToken = new google.maps.places.AutocompleteSessionToken();
 
     const searchInput = document.getElementById('address-search');
     const suggestionsContainer = document.getElementById('autocomplete-suggestions');
+    const clearSearchBtn = document.getElementById('clear-address-search-btn');
     const useCurrentLocationBtn = document.getElementById('use-current-location-btn');
 
-    if (!searchInput || !suggestionsContainer || !useCurrentLocationBtn) {
+    if (!searchInput || !suggestionsContainer || !useCurrentLocationBtn || !clearSearchBtn) {
         console.error("Address search elements not found on the page.");
         return;
     }
 
     searchInput.addEventListener('input', () => {
+        // Show/hide clear button based on input
+        if (searchInput.value.length > 0) {
+            clearSearchBtn.style.display = 'block';
+        } else {
+            clearSearchBtn.style.display = 'none';
+        }
+
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
             getSuggestions(searchInput.value);
         }, 300); // 300ms debounce
+    });
+
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchInput.focus();
+        clearSearchBtn.style.display = 'none';
+        suggestionsContainer.innerHTML = '';
+        suggestionsContainer.style.display = 'none';
     });
 
     searchInput.addEventListener('keydown', handleKeyboardNavigation);
@@ -2534,24 +2564,34 @@ function getSuggestions(input) {
 function selectSuggestion(placeId) {
     const searchInput = document.getElementById('address-search');
     const suggestionsContainer = document.getElementById('autocomplete-suggestions');
+    const clearSearchBtn = document.getElementById('clear-address-search-btn');
     
+    // 2. Hide dropdown immediately
+    suggestionsContainer.innerHTML = '';
+    suggestionsContainer.style.display = 'none';
+
+    // 5. On mobile, close the keyboard after a suggestion is selected
+    if (document.activeElement) document.activeElement.blur();
+
     if (!placeId) return;
 
-    geocoder.geocode({ placeId: placeId }, (results, status) => {
-        if (status === 'OK') {
-            if (results[0]) {
-                parseAndFillAddress(results[0]);
-                searchInput.value = ''; // Clear search input
-            } else {
-                console.error('No results found for placeId:', placeId);
-            }
+    // STEP 1: Use PlacesService.getDetails()
+    const request = {
+        placeId: placeId,
+        fields: ['name', 'formatted_address', 'address_components', 'geometry', 'url', 'vicinity', 'plus_code', 'types'],
+        sessionToken: sessionToken // Use the existing session token
+    };
+
+    placesService.getDetails(request, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            processPlaceSelection(place); // New function to handle the rich data
+            searchInput.value = ''; // Clear search input
         } else {
-            console.error('Geocoder failed due to:', status);
+            console.error('PlacesService.getDetails failed due to:', status);
         }
         
-        // Clear suggestions and reset token for next use
-        suggestionsContainer.innerHTML = '';
-        suggestionsContainer.style.display = 'none';
+        // Hide clear button and reset token for next use
+        if (clearSearchBtn) clearSearchBtn.style.display = 'none';
         sessionToken = new google.maps.places.AutocompleteSessionToken();
     });
 }
@@ -2571,7 +2611,7 @@ function geolocateAndFill() {
             };
             geocoder.geocode({ 'location': latlng }, (results, status) => {
                 if (status === 'OK' && results[0]) {
-                    parseAndFillAddress(results[0]);
+                    processPlaceSelection(results[0]);
                     // Optionally fill search bar with a readable address
                     document.getElementById('address-search').value = results[0].formatted_address.split(',').slice(0, 2).join(',');
                 } else {
@@ -2587,33 +2627,82 @@ function geolocateAndFill() {
     );
 }
 
-function parseAndFillAddress(place) {
-    const components = {};
-    place.address_components.forEach(component => {
-        // Store the first type of each component
-        const type = component.types[0];
-        components[type] = component.long_name;
-    });
+function processPlaceSelection(place) {
+    // STEP 2: Extract and store everything
 
-    // Map components to fields as per user request
-    document.getElementById('address-flat').value = components.premise || components.sublocality_level_2 || components.route || '';
-    document.getElementById('address-area').value = components.sublocality_level_1 || components.sublocality || components.neighborhood || '';
-    document.getElementById('address-landmark').value = components.point_of_interest || components.establishment || '';
-    document.getElementById('address-city').value = components.locality || components.administrative_area_level_2 || '';
-    
-    // Also fill pincode if available
-    const pincodeInput = document.getElementById('address-pincode');
-    if (pincodeInput && components.postal_code) {
-        pincodeInput.value = components.postal_code;
+    // Helper to extract address component
+    const get = (...types) => {
+        for (const t of types) {
+            const c = place.address_components?.find(x => x.types.includes(t));
+            if (c) return c.long_name;
+        }
+        return '';
+    };
+
+    const selectedAddressData = {
+        // Raw
+        placeId:          place.place_id || '',
+        fullAddress:      place.formatted_address || '',
+        placeName:        place.name || '',
+        vicinity:         place.vicinity || '',
+        mapsUrl:          place.url || '',
+        plusCode:         place.plus_code?.global_code || '',
+        types:            place.types || [],
+
+        // Coordinates
+        lat:              place.geometry?.location.lat() || '',
+        lng:              place.geometry?.location.lng() || '',
+
+        // Parsed address components
+        flatBuilding:     get('premise', 'subpremise', 'street_number'),
+        streetRoad:       get('route'),
+        sublocality2:     get('sublocality_level_2'),
+        sublocality1:     get('sublocality_level_1'),
+        neighborhood:     get('neighborhood'),
+        city:             get('locality', 'administrative_area_level_2'),
+        district:         get('administrative_area_level_2'),
+        state:            get('administrative_area_level_1'),
+        country:          get('country'),
+        pincode:          get('postal_code'),
+    };
+
+    // Save to window so it's accessible anywhere in the page
+    window.selectedAddressData = selectedAddressData;
+
+    // Also log it so I can verify in DevTools console
+    console.log('Full selected address data:', selectedAddressData);
+
+    // STEP 3: Fill ALL form fields with this data
+    document.getElementById('address-flat').value = selectedAddressData.flatBuilding || selectedAddressData.streetRoad;
+    document.getElementById('address-area').value = selectedAddressData.sublocality2 || selectedAddressData.sublocality1 || selectedAddressData.neighborhood;
+
+    if (selectedAddressData.types.includes('point_of_interest') || selectedAddressData.types.includes('establishment')) {
+        document.getElementById('address-landmark').value = selectedAddressData.placeName;
+    } else {
+        document.getElementById('address-landmark').value = '';
     }
 
-    // Fill hidden lat/lng fields for delivery calculation
+    document.getElementById('address-city').value = selectedAddressData.city;
+    
+    const pincodeInput = document.getElementById('address-pincode');
+    if (pincodeInput) {
+        pincodeInput.value = selectedAddressData.pincode;
+    }
+
+    // STEP 4: Make data available for form submission
+    // Populate existing hidden fields for backward compatibility
     const latInput = document.getElementById('customer-lat');
     const lngInput = document.getElementById('customer-lng');
-    if (latInput && lngInput && place.geometry) {
-        latInput.value = place.geometry.location.lat();
-        lngInput.value = place.geometry.location.lng();
-    }
+    if (latInput) latInput.value = selectedAddressData.lat;
+    if (lngInput) lngInput.value = selectedAddressData.lng;
+
+    // Populate new hidden fields
+    document.getElementById('hidden_lat').value = selectedAddressData.lat;
+    document.getElementById('hidden_lng').value = selectedAddressData.lng;
+    document.getElementById('hidden_full_address').value = selectedAddressData.fullAddress;
+    document.getElementById('hidden_pincode').value = selectedAddressData.pincode;
+    document.getElementById('hidden_place_id').value = selectedAddressData.placeId;
+    document.getElementById('hidden_state').value = selectedAddressData.state;
 
     const msgEl = document.getElementById('address-autofill-msg');
     if (msgEl) {
@@ -2625,6 +2714,20 @@ function parseAndFillAddress(place) {
     // Trigger blur on a field to re-calculate delivery estimate
     if (pincodeInput) {
         pincodeInput.dispatchEvent(new Event('blur'));
+    }
+
+    // 4. Scroll to next section after auto-fill
+    const couponSection = document.getElementById('coupon-section-heading');
+    if (couponSection) {
+        couponSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // 2 & 3. Show helper text and focus on the flat field
+    const flatInput = document.getElementById('address-flat');
+    const flatHelper = document.getElementById('flat-helper-text');
+    if (flatInput && flatHelper) {
+        flatHelper.style.display = 'block';
+        flatInput.focus();
     }
 }
 

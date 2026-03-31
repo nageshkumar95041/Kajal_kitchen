@@ -3357,6 +3357,8 @@ body.admin-body {
 
 /* --- Google Maps Autocomplete Styles --- */
 #address-search-container {
+    position: relative; /* Establish stacking context */
+    z-index: 1000;      /* Ensure it's above other form elements */
     margin-bottom: 12px;
 }
 
