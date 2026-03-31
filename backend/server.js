@@ -23,11 +23,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://js.stripe.com", "https://cdn.socket.io", "https://unpkg.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://js.stripe.com", "https://cdn.socket.io", "https://unpkg.com", "https://maps.googleapis.com"],
             scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://unpkg.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://unpkg.com", "https://fonts.googleapis.com"],
             imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://*.tile.openstreetmap.org", "https://via.placeholder.com"],
-            connectSrc: ["'self'", "ws:", "wss:", "https://accounts.google.com", "https://api.stripe.com", "https://nominatim.openstreetmap.org", "https://cdn.socket.io"],
+            connectSrc: ["'self'", "ws:", "wss:", "https://accounts.google.com", "https://api.stripe.com", "https://nominatim.openstreetmap.org", "https://cdn.socket.io", "https://maps.googleapis.com"],
             frameSrc: ["'self'", "https://accounts.google.com", "https://js.stripe.com", "https://hooks.stripe.com"],
         },
     },

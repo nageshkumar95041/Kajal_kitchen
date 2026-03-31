@@ -1333,10 +1333,8 @@ async function loadAdminSubscriptions(filter = currentAdminSubFilter) {
                 actions = `
                     <button class="btn-order" style="padding: 8px 16px; background: #052e16; color: #4ade80; border: 0.5px solid #166534; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Active')">Activate</button>
                     <button class="btn-order" style="padding: 8px 16px; background: #3b0a0a; color: #f87171; border: 0.5px solid #991b1b; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel</button>
-                    <button class="btn-order" style="background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 8px; padding: 8px 16px; font-size: 12px; text-transform: none; white-space: nowrap; width: auto; min-width: fit-content;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel</button>
                 `;
             } else if (sub.status === 'Active') {
-                actions = `<button class="btn-order" style="padding: 8px 16px; background: #3b0a0a; color: #f87171; border: 0.5px solid #991b1b; border-radius: 7px; font-size: 12px; width: auto; min-width: fit-content; white-space: nowrap;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel Sub</button>`;
                 actions = `<button class="btn-order" style="background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; border-radius: 8px; padding: 8px 16px; font-size: 12px; text-transform: none; white-space: nowrap; width: auto; min-width: fit-content;" onclick="updateSubscriptionStatus('${sub._id}', 'Cancelled')">Cancel Sub</button>`;
             }
 
@@ -1370,7 +1368,6 @@ async function loadAdminSubscriptions(filter = currentAdminSubFilter) {
             `;
         }).join('');
 
-        container.innerHTML = filterHtml + `<div style="display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 14px; width: 100%;">${subsHtml}</div>`;
         container.innerHTML = filterHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; width: 100%;">${subsHtml}</div>`;
     } catch (error) {
         container.innerHTML = '<p class="empty-cart" style="color:red;">Error fetching subscriptions.</p>';
