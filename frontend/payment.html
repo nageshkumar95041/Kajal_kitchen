@@ -46,6 +46,16 @@
                     <h3 style="font-size: 1.1rem; color: #2c3e50;">Delivery Address</h3>
                     <button type="button" id="locate-btn" style="background: #e67e22; color: #fff; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background 0.3s;">📍 Map Locator</button>
                 </div>
+                <!-- NEW GOOGLE MAPS SEARCH BAR -->
+                <div class="form-group" id="address-search-container" style="position: relative; margin-top: 1rem;">
+                    <div style="position: relative;">
+                        <input type="text" id="address-search" placeholder="Search your area, street or landmark…" autocomplete="off" style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; padding-right: 45px;">
+                        <button type="button" id="use-current-location-btn" title="Use my current location" style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 0;">📍</button>
+                    </div>
+                    <div id="autocomplete-suggestions"></div>
+                    <div id="address-autofill-msg" style="font-size: 0.85rem; margin-top: 5px; color: #2ecc71; opacity: 0; transition: opacity 0.3s; height: 1em;"></div>
+                </div>
+                <!-- END NEW GOOGLE MAPS SEARCH BAR -->
                 <input type="text" id="address-flat" placeholder="Flat, House no., Building, Apartment" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;" onblur="getDeliveryEstimate()">
                 <input type="text" id="address-area" placeholder="Area, Street, Sector, Village" required style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;" onblur="getDeliveryEstimate()">
                 <input type="text" id="address-landmark" placeholder="Nearby Landmark (Optional)" style="padding: 15px; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;">

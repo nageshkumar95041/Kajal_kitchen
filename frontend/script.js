@@ -2273,6 +2273,33 @@ function openMapModal(orderId, hasRated) {
 let stripePublishableKey;
 
 async function initializePaymentPage() {
+    // Dynamically load Google Maps API for Places Autocomplete
+    try {
+        const mapsConfigRes = await fetch(`${API_BASE_URL}/api/config/google-maps`);
+        if (!mapsConfigRes.ok) throw new Error('Failed to fetch Maps config');
+        const mapsConfig = await mapsConfigRes.json();
+        if (mapsConfig.apiKey) {
+            // Check if the script is already added to prevent duplicates
+            if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
+                const script = document.createElement('script');
+                // Use the callback pattern as requested
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsConfig.apiKey}&libraries=places&callback=initMaps`;
+                script.async = true;
+                script.defer = true;
+                // Make initMaps globally accessible for the callback
+                window.initMaps = initMaps; 
+                document.head.appendChild(script);
+            } else if (typeof google !== 'undefined' && typeof google.maps !== 'undefined' && !window.googleMapsInitialized) {
+                // Script might be loaded but our init function hasn't run
+                initMaps();
+            }
+        } else {
+             console.error('Google Maps API key is missing from server configuration.');
+        }
+    } catch (error) {
+        console.error('Could not load Google Maps configuration. Address search will be unavailable.', error);
+    }
+
     // Dynamically inject Stripe library if it hasn't been loaded yet
     if (typeof Stripe === 'undefined') {
         const script = document.createElement('script');
@@ -2401,6 +2428,240 @@ async function initializePaymentPage() {
     form.addEventListener('submit', async (event) => {
         await processCheckout(event, customerContact);
     });
+}
+
+/* --- Google Maps Places Autocomplete - New Implementation --- */
+let autocompleteService;
+let geocoder;
+let sessionToken;
+let debounceTimer;
+let activeSuggestionIndex = -1;
+
+// This function is the callback for the Google Maps script
+function initMaps() {
+    // 3. Add a console.log to confirm the API loaded
+    console.log("Maps loaded");
+    window.googleMapsInitialized = true; // Flag to prevent re-initialization
+    
+    // 2. Only call new services INSIDE the initMaps() callback
+    autocompleteService = new google.maps.places.AutocompleteService();
+    geocoder = new google.maps.Geocoder();
+    sessionToken = new google.maps.places.AutocompleteSessionToken();
+
+    const searchInput = document.getElementById('address-search');
+    const suggestionsContainer = document.getElementById('autocomplete-suggestions');
+    const useCurrentLocationBtn = document.getElementById('use-current-location-btn');
+
+    if (!searchInput || !suggestionsContainer || !useCurrentLocationBtn) {
+        console.error("Address search elements not found on the page.");
+        return;
+    }
+
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            getSuggestions(searchInput.value);
+        }, 300); // 300ms debounce
+    });
+
+    searchInput.addEventListener('keydown', handleKeyboardNavigation);
+    
+    // 5. Prevent form submission on Enter
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+        }
+    });
+
+    useCurrentLocationBtn.addEventListener('click', geolocateAndFill);
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!document.getElementById('address-search-container').contains(e.target)) {
+            suggestionsContainer.innerHTML = '';
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+}
+
+function getSuggestions(input) {
+    const suggestionsContainer = document.getElementById('autocomplete-suggestions');
+    if (!input || input.trim().length < 3) {
+        suggestionsContainer.innerHTML = '';
+        suggestionsContainer.style.display = 'none';
+        return;
+    }
+
+    autocompleteService.getPlacePredictions(
+        {
+            input: input,
+            sessionToken: sessionToken,
+            componentRestrictions: { country: 'in' }
+        },
+        (predictions, status) => {
+            // 4. Add error handling for getPlacePredictions
+            if (status !== google.maps.places.PlacesServiceStatus.OK) {
+                console.error('getPlacePredictions failed with status:', status);
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
+            let suggestionsHTML = '';
+            predictions.forEach((prediction, index) => {
+                suggestionsHTML += `
+                    <div class="suggestion-item" data-place-id="${prediction.place_id}" data-index="${index}">
+                        <span class="main-text">${prediction.structured_formatting.main_text}</span>
+                        <span class="secondary-text">${prediction.structured_formatting.secondary_text}</span>
+                    </div>
+                `;
+            });
+
+            suggestionsContainer.innerHTML = suggestionsHTML;
+            suggestionsContainer.style.display = 'block';
+            activeSuggestionIndex = -1; // Reset active index
+
+            // Add click listeners to new suggestion items
+            suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    selectSuggestion(item.dataset.placeId);
+                });
+            });
+        }
+    );
+}
+
+function selectSuggestion(placeId) {
+    const searchInput = document.getElementById('address-search');
+    const suggestionsContainer = document.getElementById('autocomplete-suggestions');
+    
+    if (!placeId) return;
+
+    geocoder.geocode({ placeId: placeId }, (results, status) => {
+        if (status === 'OK') {
+            if (results[0]) {
+                parseAndFillAddress(results[0]);
+                searchInput.value = ''; // Clear search input
+            } else {
+                console.error('No results found for placeId:', placeId);
+            }
+        } else {
+            console.error('Geocoder failed due to:', status);
+        }
+        
+        // Clear suggestions and reset token for next use
+        suggestionsContainer.innerHTML = '';
+        suggestionsContainer.style.display = 'none';
+        sessionToken = new google.maps.places.AutocompleteSessionToken();
+    });
+}
+
+function geolocateAndFill() {
+    if (!navigator.geolocation) {
+        console.error('Geolocation is not supported by this browser.');
+        showSystemToast('Error', 'Geolocation is not supported by this browser.', 'error');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const latlng = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+            };
+            geocoder.geocode({ 'location': latlng }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    parseAndFillAddress(results[0]);
+                    // Optionally fill search bar with a readable address
+                    document.getElementById('address-search').value = results[0].formatted_address.split(',').slice(0, 2).join(',');
+                } else {
+                    console.error('Reverse geocoding failed due to:', status);
+                    showSystemToast('Error', 'Could not determine address from location.', 'error');
+                }
+            });
+        },
+        () => {
+            console.error('Geolocation failed. User denied access or service unavailable.');
+            showSystemToast('Error', 'Geolocation failed. Please enable location services.', 'error');
+        }
+    );
+}
+
+function parseAndFillAddress(place) {
+    const components = {};
+    place.address_components.forEach(component => {
+        // Store the first type of each component
+        const type = component.types[0];
+        components[type] = component.long_name;
+    });
+
+    // Map components to fields as per user request
+    document.getElementById('address-flat').value = components.premise || components.sublocality_level_2 || components.route || '';
+    document.getElementById('address-area').value = components.sublocality_level_1 || components.sublocality || components.neighborhood || '';
+    document.getElementById('address-landmark').value = components.point_of_interest || components.establishment || '';
+    document.getElementById('address-city').value = components.locality || components.administrative_area_level_2 || '';
+    
+    // Also fill pincode if available
+    const pincodeInput = document.getElementById('address-pincode');
+    if (pincodeInput && components.postal_code) {
+        pincodeInput.value = components.postal_code;
+    }
+
+    // Fill hidden lat/lng fields for delivery calculation
+    const latInput = document.getElementById('customer-lat');
+    const lngInput = document.getElementById('customer-lng');
+    if (latInput && lngInput && place.geometry) {
+        latInput.value = place.geometry.location.lat();
+        lngInput.value = place.geometry.location.lng();
+    }
+
+    const msgEl = document.getElementById('address-autofill-msg');
+    if (msgEl) {
+        msgEl.textContent = '✅ Address fields auto-filled.';
+        msgEl.style.opacity = '1';
+        setTimeout(() => { msgEl.style.opacity = '0'; }, 3000);
+    }
+
+    // Trigger blur on a field to re-calculate delivery estimate
+    if (pincodeInput) {
+        pincodeInput.dispatchEvent(new Event('blur'));
+    }
+}
+
+function handleKeyboardNavigation(e) {
+    const suggestionsContainer = document.getElementById('autocomplete-suggestions');
+    const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSuggestionIndex++;
+        if (activeSuggestionIndex >= items.length) activeSuggestionIndex = 0;
+        updateActiveSuggestion(items);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSuggestionIndex--;
+        if (activeSuggestionIndex < 0) activeSuggestionIndex = items.length - 1;
+        updateActiveSuggestion(items);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeSuggestionIndex > -1) {
+            items[activeSuggestionIndex].click();
+        }
+    } else if (e.key === 'Escape') {
+        suggestionsContainer.innerHTML = '';
+        suggestionsContainer.style.display = 'none';
+    }
+}
+
+function updateActiveSuggestion(items) {
+    items.forEach(item => item.classList.remove('active'));
+    if (activeSuggestionIndex > -1) {
+        const activeItem = items[activeSuggestionIndex];
+        activeItem.classList.add('active');
+        // Scroll into view if needed
+        activeItem.scrollIntoView({ block: 'nearest' });
+    }
 }
 
 let appliedCoupon = null;
