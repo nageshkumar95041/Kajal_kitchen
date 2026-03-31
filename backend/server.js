@@ -87,6 +87,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 const BORZO_API_KEY = process.env.BORZO_API_KEY;
 const BORZO_ENV = process.env.BORZO_ENV || 'sandbox';
@@ -427,6 +428,13 @@ app.get('/api/config/stripe', (req, res) => {
 
 app.get('/api/config/google', (req, res) => {
     res.json({ clientId: GOOGLE_CLIENT_ID });
+});
+
+app.get('/api/config/google-maps', (req, res) => {
+    if (!GOOGLE_MAPS_API_KEY) {
+        return res.status(500).json({ success: false, message: 'Google Maps API key is not configured on the server.' });
+    }
+    res.json({ apiKey: GOOGLE_MAPS_API_KEY });
 });
 
 app.use('/api/', apiLimiter); // Apply general rate limit to all /api/ routes

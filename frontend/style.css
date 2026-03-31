@@ -3354,3 +3354,38 @@ body.admin-body {
     opacity: 0.9;
     background: #f97316 !important;
 }
+
+/* --- Google Maps Autocomplete Styles --- */
+#address-search-container {
+    position: relative; /* Establish stacking context */
+    z-index: 1000;      /* Ensure it's above other form elements */
+    margin-bottom: 12px;
+}
+
+#autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1001;
+    max-height: 250px;
+    overflow-y: auto;
+    display: none; /* Initially hidden */
+}
+
+.suggestion-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover, .suggestion-item.active { background-color: #f5f0e6; } /* Cream/beige theme */
+.suggestion-item .main-text { font-weight: 500; color: #333; display: block; }
+.suggestion-item .secondary-text { font-size: 0.85rem; color: #777; }
