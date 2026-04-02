@@ -2961,6 +2961,21 @@ body.admin-body {
     color: #aaa;
 }
 
+.auth-form input.input-valid {
+    border-color: #28a745 !important;
+}
+
+.auth-form input.input-invalid {
+    border-color: #dc3545 !important;
+}
+
+.error-text {
+    font-size: 12px;
+    color: #dc3545;
+    margin-top: 4px;
+    display: none;
+}
+
 .password-wrapper {
     position: relative;
 }
@@ -2998,10 +3013,9 @@ body.admin-body {
     transition: background-color 0.3s;
 }
 
-.strength-bar.weak { background-color: #e74c3c; }
+.strength-bar.weak { background-color: #dc3545; }
 .strength-bar.medium { background-color: #f39c12; }
 .strength-bar.strong { background-color: #27ae60; }
-.strength-bar.very-strong { background-color: #2ecc71; }
 
 .btn-full {
     width: 100%;
@@ -3018,6 +3032,11 @@ body.admin-body {
 
 .btn-full:hover {
     background-color: #c96d27;
+}
+
+.btn-full:disabled {
+    background-color: #f0b58e;
+    cursor: not-allowed;
 }
 
 .divider {

@@ -177,9 +177,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.location.pathname.includes('register.html')) {
         initializeGoogleLogin();
+        const nameInput = document.getElementById('reg-name');
+        const contactInput = document.getElementById('reg-contact');
         const passwordInput = document.getElementById('reg-password');
         const passwordToggle = document.getElementById('password-toggle');
         const strengthMeter = document.getElementById('password-strength-meter');
+        const submitBtn = document.getElementById('reg-submit-btn');
+
+        const nameError = document.getElementById('reg-name-error');
+        const contactError = document.getElementById('reg-contact-error');
+        const passwordError = document.getElementById('reg-password-error');
+
+        let isNameValid = false;
+        let isContactValid = false;
+        let isPasswordValid = false;
+
+        function updateSubmitBtn() {
+            if (submitBtn) submitBtn.disabled = !(isNameValid && isContactValid && isPasswordValid);
+        }
+
+        function validateName(onBlur) {
+            const val = nameInput.value.trim();
+            isNameValid = /^[a-zA-Z\s]+$/.test(val) && val.length >= 3 && val.length <= 50;
+            if (isNameValid) {
+                nameInput.classList.add('input-valid');
+                nameInput.classList.remove('input-invalid');
+                nameError.style.display = 'none';
+            } else {
+                nameInput.classList.remove('input-valid');
+                if (onBlur) {
+                    nameInput.classList.add('input-invalid');
+                    nameError.textContent = "Please enter a valid full name (letters only, min 3 chars)";
+                    nameError.style.display = 'block';
+                }
+            }
+            updateSubmitBtn();
+        }
+
+        function validateContact(onBlur) {
+            const val = contactInput.value.trim();
+            const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+            const phoneValid = /^[6-9]\d{9}$/.test(val);
+            isContactValid = emailValid || phoneValid;
+            if (isContactValid) {
+                contactInput.classList.add('input-valid');
+                contactInput.classList.remove('input-invalid');
+                contactError.style.display = 'none';
+            } else {
+                contactInput.classList.remove('input-valid');
+                if (onBlur) {
+                    contactInput.classList.add('input-invalid');
+                    contactError.textContent = "Enter a valid email address or 10-digit phone number";
+                    contactError.style.display = 'block';
+                }
+            }
+            updateSubmitBtn();
+        }
+
+        function validatePassword(onBlur) {
+            const val = passwordInput.value;
+            const hasUpper = /[A-Z]/.test(val);
+            const hasLower = /[a-z]/.test(val);
+            const hasNum = /[0-9]/.test(val);
+            const hasSpec = /[@#$!%*?&]/.test(val);
+            const hasLen = val.length >= 8;
+            
+            isPasswordValid = hasUpper && hasLower && hasNum && hasSpec && hasLen;
+
+            if (isPasswordValid) {
+                passwordInput.classList.add('input-valid');
+                passwordInput.classList.remove('input-invalid');
+                passwordError.style.display = 'none';
+            } else {
+                passwordInput.classList.remove('input-valid');
+                if (onBlur) {
+                    passwordInput.classList.add('input-invalid');
+                    passwordError.textContent = "Password must be 8+ chars with uppercase, number & special character";
+                    passwordError.style.display = 'block';
+                }
+            }
+            updateSubmitBtn();
+        }
+
+        if (nameInput) {
+            nameInput.addEventListener('input', () => { nameError.style.display = 'none'; nameInput.classList.remove('input-invalid'); validateName(false); });
+            nameInput.addEventListener('blur', () => validateName(true));
+        }
+        if (contactInput) {
+            contactInput.addEventListener('input', () => { contactError.style.display = 'none'; contactInput.classList.remove('input-invalid'); validateContact(false); });
+            contactInput.addEventListener('blur', () => validateContact(true));
+        }
 
         if (passwordInput && passwordToggle) {
             passwordToggle.addEventListener('click', () => {
@@ -189,10 +276,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (passwordInput && strengthMeter) {
+        if (passwordInput) {
             passwordInput.addEventListener('input', () => {
-                updatePasswordStrength(passwordInput.value);
+                passwordError.style.display = 'none';
+                passwordInput.classList.remove('input-invalid');
+                validatePassword(false);
+                if (strengthMeter) updatePasswordStrength(passwordInput.value);
             });
+            passwordInput.addEventListener('blur', () => validatePassword(true));
         }
     }
 
@@ -203,26 +294,103 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!token) {
             showSystemToast('Error', 'Invalid or missing reset token.', 'error');
             setTimeout(() => window.location.href = 'login.html', 2000);
-        } else {
-            const resetForm = document.getElementById('reset-password-form');
-            if (resetForm) {
-                resetForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const newPassword = document.getElementById('reset-password').value;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/reset-password`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ token, newPassword })
-                        });
-                        const data = await response.json();
-                        if (response.ok) { showSystemToast('Success', data.message); setTimeout(() => window.location.href = 'login.html', 2000); } 
-                        else { showSystemToast('Error', data.message, 'error'); }
-                    } catch (error) {
-                        showSystemToast('Error', 'Error connecting to server.', 'error');
-                    }
-                });
+            return; // Stop execution if no token
+        }
+
+        const resetForm = document.getElementById('reset-password-form');
+        const passwordInput = document.getElementById('reset-password');
+        const confirmPasswordInput = document.getElementById('confirm-reset-password');
+        const passwordError = document.getElementById('reset-password-error');
+        const confirmPasswordError = document.getElementById('confirm-password-error');
+        const submitBtn = document.getElementById('reset-submit-btn');
+        const toggle1 = document.getElementById('password-toggle-1');
+        const toggle2 = document.getElementById('password-toggle-2');
+
+        let isPasswordValid = false;
+        let isConfirmPasswordValid = false;
+
+        function updateResetSubmitBtn() {
+            if (submitBtn) submitBtn.disabled = !(isPasswordValid && isConfirmPasswordValid);
+        }
+
+        function validateResetPassword(onBlur) {
+            const val = passwordInput.value;
+            const hasUpper = /[A-Z]/.test(val);
+            const hasLower = /[a-z]/.test(val);
+            const hasNum = /[0-9]/.test(val);
+            const hasSpec = /[@#$!%*?&]/.test(val);
+            const hasLen = val.length >= 8;
+            
+            isPasswordValid = hasUpper && hasLower && hasNum && hasSpec && hasLen;
+
+            if (isPasswordValid) {
+                passwordInput.classList.add('input-valid');
+                passwordInput.classList.remove('input-invalid');
+                passwordError.style.display = 'none';
+            } else {
+                passwordInput.classList.remove('input-valid');
+                if (onBlur) {
+                    passwordInput.classList.add('input-invalid');
+                    passwordError.textContent = "Password must be 8+ chars with uppercase, number & special character";
+                    passwordError.style.display = 'block';
+                }
             }
+            // Also validate confirm password field as it depends on this one
+            if (confirmPasswordInput.value) {
+                validateConfirmPassword(onBlur);
+            }
+            updateResetSubmitBtn();
+        }
+
+        function validateConfirmPassword(onBlur) {
+            const passwordVal = passwordInput.value;
+            const confirmVal = confirmPasswordInput.value;
+            
+            isConfirmPasswordValid = (confirmVal.length > 0 && passwordVal === confirmVal && isPasswordValid);
+
+            if (isConfirmPasswordValid) {
+                confirmPasswordInput.classList.add('input-valid');
+                confirmPasswordInput.classList.remove('input-invalid');
+                confirmPasswordError.style.display = 'none';
+            } else {
+                confirmPasswordInput.classList.remove('input-valid');
+                if (onBlur) {
+                    confirmPasswordInput.classList.add('input-invalid');
+                    confirmPasswordError.textContent = "Passwords do not match.";
+                    confirmPasswordError.style.display = 'block';
+                }
+            }
+            updateResetSubmitBtn();
+        }
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', () => { passwordError.style.display = 'none'; passwordInput.classList.remove('input-invalid'); validateResetPassword(false); });
+            passwordInput.addEventListener('blur', () => validateResetPassword(true));
+        }
+
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', () => { confirmPasswordError.style.display = 'none'; confirmPasswordInput.classList.remove('input-invalid'); validateConfirmPassword(false); });
+            confirmPasswordInput.addEventListener('blur', () => validateConfirmPassword(true));
+        }
+
+        if (toggle1) { toggle1.addEventListener('click', () => { const isPassword = passwordInput.getAttribute('type') === 'password'; passwordInput.setAttribute('type', isPassword ? 'text' : 'password'); toggle1.textContent = isPassword ? '🙈' : '👁️'; }); }
+        if (toggle2) { toggle2.addEventListener('click', () => { const isPassword = confirmPasswordInput.getAttribute('type') === 'password'; confirmPasswordInput.setAttribute('type', isPassword ? 'text' : 'password'); toggle2.textContent = isPassword ? '🙈' : '👁️'; }); }
+
+        if (resetForm) {
+            resetForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                validateResetPassword(true);
+                validateConfirmPassword(true);
+                if (!isPasswordValid || !isConfirmPasswordValid) { showSystemToast('Error', 'Please correct the errors before submitting.', 'error'); return; }
+                const newPassword = passwordInput.value;
+                submitBtn.disabled = true; submitBtn.innerText = 'Resetting...';
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, newPassword }) });
+                    const data = await response.json();
+                    if (response.ok) { showSystemToast('Success', data.message); setTimeout(() => window.location.href = 'login.html', 2000); } 
+                    else { showSystemToast('Error', data.message, 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Reset Password'; }
+                } catch (error) { showSystemToast('Error', 'Error connecting to server.', 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Reset Password'; }
+            });
         }
     }
 
@@ -852,12 +1020,17 @@ function updatePasswordStrength(password) {
     if (!strengthMeter) return;
     
     const bars = strengthMeter.querySelectorAll('.strength-bar');
-    let strength = 0;
+    let conditionsMet = 0;
 
-    if (password.length >= 8) strength++;
-    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
-    if (password.match(/[0-9]/)) strength++;
-    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    if (password.match(/[a-z]/)) conditionsMet++;
+    if (password.match(/[A-Z]/)) conditionsMet++;
+    if (password.match(/[0-9]/)) conditionsMet++;
+    if (password.match(/[@#$!%*?&]/)) conditionsMet++;
+
+    let strength = 0;
+    if (conditionsMet >= 1 && conditionsMet <= 2) strength = 1;
+    else if (conditionsMet === 3) strength = 2;
+    else if (conditionsMet === 4 && password.length >= 8) strength = 3;
 
     bars.forEach((bar, index) => {
         bar.className = 'strength-bar'; // Reset
@@ -865,7 +1038,6 @@ function updatePasswordStrength(password) {
             if (strength === 1) bar.classList.add('weak');
             else if (strength === 2) bar.classList.add('medium');
             else if (strength === 3) bar.classList.add('strong');
-            else if (strength === 4) bar.classList.add('very-strong');
         }
     });
 }
@@ -3189,15 +3361,17 @@ async function handleRegistration(event) {
                 showSystemToast('Success', 'Verification code sent!');
                 showOtpModal(contact);
             } else {
-                showSystemToast('Success', 'Account created successfully! Redirecting...');
+                showSystemToast('Success', 'Account created successfully! Welcome to Kajal Kitchen 🎉');
                 setTimeout(() => { window.location.href = 'login.html'; }, 1500);
             }
         } else {
             showSystemToast('Error', data.message || 'Registration failed.', 'error');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Create account'; }
         }
     } catch (error) {
         console.error('Registration Error:', error);
         showSystemToast('Error', 'Network Error: Could not connect to the server.', 'error');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Create account'; }
     }
 }
 

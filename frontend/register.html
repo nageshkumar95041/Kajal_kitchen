@@ -36,10 +36,12 @@
                 <div class="form-group">
                     <label for="reg-name">Full name</label>
                     <input type="text" id="reg-name" placeholder="e.g. Rahul Sharma" required>
+                    <div class="error-text" id="reg-name-error"></div>
                 </div>
                 <div class="form-group">
                     <label for="reg-contact">Email address or Phone</label>
                     <input type="text" id="reg-contact" placeholder="e.g. rahul@example.com" required>
+                    <div class="error-text" id="reg-contact-error"></div>
                 </div>
                 <div class="form-group">
                     <label for="reg-password">Password</label>
@@ -51,10 +53,10 @@
                         <div class="strength-bar"></div>
                         <div class="strength-bar"></div>
                         <div class="strength-bar"></div>
-                        <div class="strength-bar"></div>
                     </div>
+                    <div class="error-text" id="reg-password-error"></div>
                 </div>
-                <button type="submit" class="btn btn-full">Create account</button>
+                <button type="submit" class="btn btn-full" id="reg-submit-btn" disabled>Create account</button>
             </form>
 
             <div class="divider">or</div>
