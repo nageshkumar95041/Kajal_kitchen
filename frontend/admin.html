@@ -17,6 +17,7 @@
                 <li><a href="#" onclick="switchAdminTab('tab-menu')" id="nav-menu">🍔 Menu Management</a></li>
                 <li><a href="#" onclick="switchAdminTab('tab-tiffin')" id="nav-tiffin">🍱 Today's Tiffin</a></li>
                 <li><a href="#" onclick="switchAdminTab('tab-customers')" id="nav-customers">👥 Customers</a></li>
+                <li><a href="#" onclick="switchAdminTab('tab-users')" id="nav-users">🛡️ User Control</a></li>
             </ul>
             <div class="sidebar-footer">
                 <button onclick="toggleTheme()" class="theme-toggle">🌓 Toggle Theme</button>
@@ -78,6 +79,13 @@
                 <p style="color: var(--admin-text-muted);">Track repeat customers and order history.</p>
                 <div id="admin-customers-container" style="margin-top: 2rem;"></div>
             </div>
+
+            <div id="tab-users" class="admin-tab-content">
+                <h2>User Control Management</h2>
+                <p style="color: var(--admin-text-muted);">Manage registered users, trust status (for COD), verifications, and admin access.</p>
+                <div id="admin-users-container" style="margin-top: 2rem;"></div>
+            </div>
+
         </main>
     </div>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>

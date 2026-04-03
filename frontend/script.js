@@ -1113,6 +1113,7 @@ function switchAdminTab(tabId) {
     else if (tabId === 'tab-menu') loadAdminMenu();
     else if (tabId === 'tab-tiffin') loadAdminTiffin();
     else if (tabId === 'tab-customers') loadAdminCustomers();
+    else if (tabId === 'tab-users') loadAdminUsers();
 }
 
 function toggleSidebar() {
@@ -1703,6 +1704,117 @@ async function viewCustomerHistory(contact, name) {
     } catch (error) {
         showSystemToast('Error', 'Error fetching customer history.', 'error');
     }
+}
+
+/* --- Admin User Control --- */
+let allAdminUsersList = [];
+
+async function loadAdminUsers() {
+    const container = document.getElementById('admin-users-container');
+    if (!container) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE_URL}/api/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const users = await res.json();
+
+        if (!Array.isArray(users) || users.length === 0) {
+            container.innerHTML = '<p class="empty-cart">No users found.</p>';
+            return;
+        }
+
+        allAdminUsersList = users;
+
+        const searchHtml = `
+            <input type="text" id="user-search-input" placeholder="Search users by name or contact..." style="background: var(--admin-card-bg); border: 1px solid var(--admin-border); border-radius: 8px; padding: 10px 14px; color: var(--admin-text-main); width: 100%; max-width: 400px; margin-bottom: 1rem;" oninput="filterAdminUsers()">
+        `;
+
+        container.innerHTML = searchHtml + '<div id="admin-users-table-container"></div>';
+        renderAdminUsersTable(allAdminUsersList);
+    } catch (error) {
+        container.innerHTML = '<p style="color:red;">Error loading users.</p>';
+    }
+}
+
+function filterAdminUsers() {
+    const term = document.getElementById('user-search-input')?.value.toLowerCase() || '';
+    const filtered = allAdminUsersList.filter(u => 
+        (u.name || '').toLowerCase().includes(term) || 
+        (u.contact || '').toLowerCase().includes(term)
+    );
+    renderAdminUsersTable(filtered);
+}
+
+function renderAdminUsersTable(users) {
+    const container = document.getElementById('admin-users-table-container');
+    if (!container) return;
+
+    if (users.length === 0) {
+        container.innerHTML = '<p class="empty-cart">No users match your search.</p>';
+        return;
+    }
+
+    let html = '<div style="overflow-x: auto;"><table style="width:100%; border-collapse: collapse; background: var(--admin-card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 5px; overflow: hidden; min-width: 800px;">';
+    html += '<tr style="background: var(--admin-sidebar); color: var(--admin-sidebar-text); text-align: left;"><th style="padding: 1rem;">User Details</th><th style="padding: 1rem;">Role</th><th style="padding: 1rem;">Status</th><th style="padding: 1rem;">Actions</th></tr>';
+    
+    users.forEach(user => {
+        const isAdmin = user.role === 'admin';
+        const isTrusted = user.isTrusted;
+        const isVerified = user.isVerified;
+        const safeId = escapeHTML(user._id);
+
+        html += `
+            <tr style="border-bottom: 1px solid var(--admin-border);">
+                <td style="padding: 1rem;">
+                    <div style="font-weight: 500; color: var(--admin-text-main);">${escapeHTML(user.name || 'Guest')}</div>
+                    <div style="font-size: 0.85rem; color: var(--admin-text-muted);">${escapeHTML(user.contact)}</div>
+                </td>
+                <td style="padding: 1rem;">
+                    <span style="background: ${isAdmin ? '#8b5cf6' : '#6b7280'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.85rem;">${isAdmin ? 'Admin' : 'User'}</span>
+                </td>
+                <td style="padding: 1rem; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="background: ${isVerified ? '#22c55e' : '#f97316'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; width: fit-content;">${isVerified ? 'Verified' : 'Unverified'}</span>
+                    <span style="background: ${isTrusted ? '#3b82f6' : '#6b7280'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; width: fit-content;">${isTrusted ? 'Trusted (COD Allowed)' : 'Standard'}</span>
+                </td>
+                <td style="padding: 1rem;">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: ${isAdmin ? '#4b5563' : '#8b5cf6'}; color: white; border: none; border-radius: 4px;" onclick="toggleUserRole('${safeId}', '${isAdmin ? 'user' : 'admin'}')">${isAdmin ? 'Revoke Admin' : 'Make Admin'}</button>
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: ${isTrusted ? '#4b5563' : '#3b82f6'}; color: white; border: none; border-radius: 4px;" onclick="toggleUserTrust('${safeId}', ${!isTrusted})">${isTrusted ? 'Revoke Trust' : 'Mark Trusted'}</button>
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: ${isVerified ? '#4b5563' : '#22c55e'}; color: white; border: none; border-radius: 4px;" onclick="toggleUserVerification('${safeId}', ${!isVerified})">${isVerified ? 'Unverify' : 'Verify'}</button>
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: #dc2626; color: white; border: none; border-radius: 4px;" onclick="deleteAdminUser('${safeId}')">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    html += '</table></div>';
+    container.innerHTML = html;
+}
+
+async function toggleUserRole(id, newRole) {
+    if(!confirm(`Are you sure you want to make this user an ${newRole}?`)) return;
+    _adminApiCall(`/api/admin/users/${id}/role`, 'PUT', { role: newRole });
+}
+async function toggleUserTrust(id, isTrusted) {
+    _adminApiCall(`/api/admin/users/${id}/trust`, 'PUT', { isTrusted });
+}
+async function toggleUserVerification(id, isVerified) {
+    _adminApiCall(`/api/admin/users/${id}/verify`, 'PUT', { isVerified });
+}
+async function deleteAdminUser(id) {
+    if(!confirm(`Are you sure you want to permanently delete this user account? This action cannot be undone.`)) return;
+    _adminApiCall(`/api/admin/users/${id}`, 'DELETE');
+}
+async function _adminApiCall(url, method, body = null) {
+    const token = localStorage.getItem('authToken');
+    try {
+        const options = { method, headers: { 'Authorization': `Bearer ${token}` } };
+        if (body) { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body); }
+        const res = await fetch(API_BASE_URL + url, options);
+        const data = await res.json();
+        if (res.ok) { showSystemToast('Success', data.message || 'Success'); loadAdminUsers(); }
+        else { showSystemToast('Error', data.message || 'Operation failed.', 'error'); }
+    } catch (e) { showSystemToast('Error', 'Network error', 'error'); }
 }
 
 let trackingInterval = null;
@@ -3334,26 +3446,139 @@ async function verifyStripeSession(sessionId) {
     }
 }
 
+// --- Error Handling Utilities ---
+function showTopCenterToast(type, message, retryCallback = null) {
+    let container = document.getElementById('top-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'top-toast-container';
+        container.className = 'top-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const existingToast = container.querySelector('.top-toast');
+    if (existingToast) {
+        const existingMsg = existingToast.querySelector('.top-toast-msg').textContent;
+        if (existingMsg === message) {
+            existingToast.classList.remove('shake');
+            void existingToast.offsetWidth; // trigger reflow
+            existingToast.classList.add('shake');
+            return;
+        } else {
+            existingToast.remove(); 
+        }
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'top-toast';
+    const icon = type === 'error' ? '❌' : '⚠️';
+    const borderColor = type === 'error' ? '#dc3545' : '#f39c12';
+    const title = type === 'error' ? 'Error' : 'Notice';
+    toast.style.borderLeftColor = borderColor;
+
+    let retryHtml = retryCallback ? `<button class="top-toast-retry" style="margin-top: 8px; background: transparent; border: 1px solid ${borderColor}; color: ${borderColor}; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.2s;">Retry</button>` : '';
+
+    toast.innerHTML = `
+        <div style="font-size: 16px; margin-top: 2px;">${icon}</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 600; font-size: 14px; color: #333; margin-bottom: 2px;">${title}</div>
+            <div class="top-toast-msg" style="font-size: 13px; color: #666; line-height: 1.4;">${escapeHTML(message)}</div>
+            ${retryHtml}
+        </div>
+        <button class="top-toast-close" style="background: none; border: none; font-size: 16px; color: #999; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    const removeToast = () => { if (toast.parentElement) toast.remove(); };
+    const timeoutId = setTimeout(removeToast, 3000); // Auto-dismiss after 3s
+
+    toast.querySelector('.top-toast-close').addEventListener('click', () => {
+        clearTimeout(timeoutId);
+        removeToast();
+    });
+
+    if (retryCallback) {
+        const retryBtn = toast.querySelector('.top-toast-retry');
+        retryBtn.addEventListener('click', () => {
+            clearTimeout(timeoutId);
+            removeToast();
+            retryCallback();
+        });
+        retryBtn.addEventListener('mouseenter', () => { retryBtn.style.background = borderColor; retryBtn.style.color = '#fff'; });
+        retryBtn.addEventListener('mouseleave', () => { retryBtn.style.background = 'transparent'; retryBtn.style.color = borderColor; });
+    }
+}
+
+function showFieldError(fieldName, message, isHtml = false) {
+    const input = document.getElementById(fieldName);
+    const errorEl = document.getElementById(fieldName + '-error');
+    if (input) {
+        input.classList.remove('input-valid');
+        input.classList.add('input-invalid');
+    }
+    if (errorEl) {
+        if (isHtml) errorEl.innerHTML = message;
+        else errorEl.textContent = message;
+        errorEl.style.display = 'block';
+    }
+}
+
+function clearAllErrors() {
+    document.querySelectorAll('.auth-form .input-invalid').forEach(el => el.classList.remove('input-invalid'));
+    document.querySelectorAll('.auth-form .error-text').forEach(el => {
+        el.style.display = 'none';
+        el.innerHTML = '';
+    });
+}
+
 /* --- Authentication Functions --- */
 async function handleRegistration(event) {
-    event.preventDefault();
-    const name = document.getElementById('reg-name').value;
-    const contact = document.getElementById('reg-contact').value.trim();
-    const password = document.getElementById('reg-password').value;
+    if (event) event.preventDefault();
+    
+    clearAllErrors();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
-    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
-        showSystemToast('Error', 'Please enter a valid email address or a 10-digit phone number.', 'error');
-        return;
+    const nameInput = document.getElementById('reg-name');
+    const contactInput = document.getElementById('reg-contact');
+    const passwordInput = document.getElementById('reg-password');
+    
+    const name = nameInput ? nameInput.value.trim() : '';
+    const contact = contactInput ? contactInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value : '';
+
+    // Pre-flight frontend validation
+    const nameValid = /^[a-zA-Z\s]+$/.test(name) && name.length >= 3 && name.length <= 50;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+    const phoneValid = /^[6-9]\d{9}$/.test(contact);
+    const contactValid = emailValid || phoneValid;
+    const passValid = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&]).{8,}/.test(password);
+
+    let hasErrors = false;
+    if (!nameValid) { showFieldError('reg-name', 'Please enter a valid full name (letters only, min 3 chars)'); hasErrors = true; }
+    if (!contactValid) { showFieldError('reg-contact', 'Enter a valid email address or 10-digit phone number'); hasErrors = true; }
+    if (!passValid) { showFieldError('reg-password', 'Password must be 8+ chars with uppercase, number & special character'); hasErrors = true; }
+
+    if (hasErrors) return;
+
+    const submitBtn = document.getElementById('reg-submit-btn');
+    
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="btn-spinner"></span>Creating account...';
     }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s Timeout
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, contact, password })
+            body: JSON.stringify({ name, contact, password }),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         const data = await response.json();
 
         if (response.ok) {
@@ -3365,12 +3590,31 @@ async function handleRegistration(event) {
                 setTimeout(() => { window.location.href = 'login.html'; }, 1500);
             }
         } else {
-            showSystemToast('Error', data.message || 'Registration failed.', 'error');
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Create account'; }
+            // 1. Check for Duplicate Account via 409 status or string match
+            if (response.status === 409 || (data.message && data.message.toLowerCase().includes('already exists'))) {
+                showFieldError('reg-contact', 'This email/phone is already registered. Try logging in instead. <a href="login.html" style="color:#dc3545; text-decoration:underline; font-weight:bold; margin-left:4px;">Log in here →</a>', true);
+            } 
+            // 2. Field-specific validation from server
+            else if (data.message && data.message.toLowerCase().includes('name')) {
+                showFieldError('reg-name', data.message);
+            }
+            else if (data.message && data.message.toLowerCase().includes('password')) {
+                showFieldError('reg-password', data.message);
+            }
+            // 3. General Server Error (500, 503)
+            else {
+                showTopCenterToast('error', data.message || 'Something went wrong on our end. Please try again in a moment.');
+            }
         }
     } catch (error) {
-        console.error('Registration Error:', error);
-        showSystemToast('Error', 'Network Error: Could not connect to the server.', 'error');
+        if (error.name === 'AbortError') {
+            showTopCenterToast('error', 'Request timed out. Please try again.', () => handleRegistration(event));
+        } else if (error.message.includes('Failed to fetch') || error instanceof TypeError) {
+            showTopCenterToast('error', 'No internet connection. Please check your network and try again.', () => handleRegistration(event));
+        } else {
+            showTopCenterToast('error', 'Something went wrong on our end. Please try again in a moment.');
+        }
+    } finally {
         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Create account'; }
     }
 }

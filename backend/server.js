@@ -854,6 +854,52 @@ app.get('/api/users', authenticateAdmin, async (req, res) => {
     }
 });
 
+app.put('/api/admin/users/:id/role', authenticateAdmin, async (req, res) => {
+    try {
+        const { role } = req.body;
+        if (!['admin', 'user'].includes(role)) {
+            return res.status(400).json({ success: false, message: 'Invalid role assignment.' });
+        }
+        const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
+        res.json({ success: true, message: 'User role updated successfully.', user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error updating user role.' });
+    }
+});
+
+app.put('/api/admin/users/:id/trust', authenticateAdmin, async (req, res) => {
+    try {
+        const { isTrusted } = req.body;
+        const user = await User.findByIdAndUpdate(req.params.id, { isTrusted }, { new: true });
+        res.json({ success: true, message: 'User trust status updated.', user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error updating trust status.' });
+    }
+});
+
+app.put('/api/admin/users/:id/verify', authenticateAdmin, async (req, res) => {
+    try {
+        const { isVerified } = req.body;
+        const user = await User.findByIdAndUpdate(req.params.id, { isVerified }, { new: true });
+        res.json({ success: true, message: 'User verification status updated.', user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error updating verification status.' });
+    }
+});
+
+app.delete('/api/admin/users/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (user && user.role === 'admin' && req.user.id !== user._id.toString()) {
+            // Optional safety: Only allow an admin to delete themselves or regular users to prevent total lockout
+        }
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'User permanently deleted.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error deleting user.' });
+    }
+});
+
 app.get('/api/my-orders', authenticateUser, async (req, res) => {
     // Fetch latest 20 user orders sorted by newest first
     const limit = parseInt(req.query.limit) || 20;
@@ -1318,6 +1364,59 @@ app.post('/api/login', authLimiter, async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ success: false, message: 'Login failed.' });
+    }
+});
+
+app.post('/api/verify', authLimiter, async (req, res) => {
+    const { contact, otp } = req.body;
+    if (!contact || !otp) return res.status(400).json({ success: false, message: 'Contact details and OTP code are required.' });
+    
+    try {
+        const user = await User.findOne({ contact: contact.toLowerCase() });
+        if (!user) return res.status(404).json({ success: false, message: 'User account not found.' });
+        if (user.isVerified) return res.status(400).json({ success: false, message: 'Account is already verified.' });
+        
+        if (!user.otpExpires || Date.now() > user.otpExpires) {
+            return res.status(400).json({ success: false, message: 'Your verification code has expired. Please request a new one.' });
+        }
+        
+        const isValid = await bcrypt.compare(otp, user.verificationOtp);
+        if (!isValid) return res.status(400).json({ success: false, message: 'Invalid code. Please try again.' });
+        
+        user.isVerified = true;
+        user.verificationOtp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+        
+        const token = jwt.sign({ id: user._id, role: user.role }, SECRET_KEY, { expiresIn: '2h' });
+        res.json({ success: true, token, user: { name: user.name, contact: user.contact, role: user.role } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error during verification.' });
+    }
+});
+
+app.post('/api/resend-otp', authLimiter, async (req, res) => {
+    const { contact } = req.body;
+    if (!contact) return res.status(400).json({ success: false, message: 'Contact detail is required.' });
+    
+    try {
+        const user = await User.findOne({ contact: contact.toLowerCase() });
+        if (!user) return res.status(404).json({ success: false, message: 'User account not found.' });
+        if (user.isVerified) return res.status(400).json({ success: false, message: 'Account is already verified.' });
+        
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.verificationOtp = await bcrypt.hash(otp, 10);
+        user.otpExpires = Date.now() + 10 * 60 * 1000;
+        await user.save();
+        
+        if (contact.includes('@')) {
+            const mailOptions = { from: EMAIL_USER, to: contact, subject: 'Your New Verification Code - Kajal Ki Rasoi', html: `<h3>Welcome back!</h3><p>Your new verification code is: <strong style="font-size: 1.5rem; letter-spacing: 0.2rem;">${otp}</strong></p><p>It expires in 10 minutes.</p>` };
+            transporter.sendMail(mailOptions).catch(console.error);
+        } else { console.log(`[MOCK SMS] New OTP for ${contact} is ${otp}`); }
+        
+        res.json({ success: true, message: 'New verification code sent.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error while resending code.' });
     }
 });
 
