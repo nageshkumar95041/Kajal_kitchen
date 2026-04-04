@@ -177,9 +177,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.location.pathname.includes('register.html')) {
         initializeGoogleLogin();
+        const nameInput = document.getElementById('reg-name');
+        const contactInput = document.getElementById('reg-contact');
         const passwordInput = document.getElementById('reg-password');
         const passwordToggle = document.getElementById('password-toggle');
         const strengthMeter = document.getElementById('password-strength-meter');
+        const submitBtn = document.getElementById('reg-submit-btn');
+
+        const nameError = document.getElementById('reg-name-error');
+        const contactError = document.getElementById('reg-contact-error');
+        const passwordError = document.getElementById('reg-password-error');
+
+        let isNameValid = false;
+        let isContactValid = false;
+        let isPasswordValid = false;
+
+        function updateSubmitBtn() {
+            if (submitBtn) submitBtn.disabled = !(isNameValid && isContactValid && isPasswordValid);
+        }
+
+        function validateName(onBlur) {
+            const val = nameInput.value.trim();
+            isNameValid = /^[a-zA-Z\s]+$/.test(val) && val.length >= 3 && val.length <= 50;
+            if (isNameValid) {
+                nameInput.classList.add('input-valid');
+                nameInput.classList.remove('input-invalid');
+                nameError.style.display = 'none';
+            } else {
+                nameInput.classList.remove('input-valid');
+                if (onBlur) {
+                    nameInput.classList.add('input-invalid');
+                    nameError.textContent = "Please enter a valid full name (letters only, min 3 chars)";
+                    nameError.style.display = 'block';
+                }
+            }
+            updateSubmitBtn();
+        }
+
+        function validateContact(onBlur) {
+            const val = contactInput.value.trim();
+            const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+            const phoneValid = /^[6-9]\d{9}$/.test(val);
+            isContactValid = emailValid || phoneValid;
+            if (isContactValid) {
+                contactInput.classList.add('input-valid');
+                contactInput.classList.remove('input-invalid');
+                contactError.style.display = 'none';
+            } else {
+                contactInput.classList.remove('input-valid');
+                if (onBlur) {
+                    contactInput.classList.add('input-invalid');
+                    contactError.textContent = "Enter a valid email address or 10-digit phone number";
+                    contactError.style.display = 'block';
+                }
+            }
+            updateSubmitBtn();
+        }
+
+        function validatePassword(onBlur) {
+            const val = passwordInput.value;
+            const hasUpper = /[A-Z]/.test(val);
+            const hasLower = /[a-z]/.test(val);
+            const hasNum = /[0-9]/.test(val);
+            const hasSpec = /[@#$!%*?&]/.test(val);
+            const hasLen = val.length >= 8;
+            
+            isPasswordValid = hasUpper && hasLower && hasNum && hasSpec && hasLen;
+
+            if (isPasswordValid) {
+                passwordInput.classList.add('input-valid');
+                passwordInput.classList.remove('input-invalid');
+                passwordError.style.display = 'none';
+            } else {
+                passwordInput.classList.remove('input-valid');
+                if (onBlur) {
+                    passwordInput.classList.add('input-invalid');
+                    passwordError.textContent = "Password must be 8+ chars with uppercase, number & special character";
+                    passwordError.style.display = 'block';
+                }
+            }
+            updateSubmitBtn();
+        }
+
+        if (nameInput) {
+            nameInput.addEventListener('input', () => { nameError.style.display = 'none'; nameInput.classList.remove('input-invalid'); validateName(false); });
+            nameInput.addEventListener('blur', () => validateName(true));
+        }
+        if (contactInput) {
+            contactInput.addEventListener('input', () => { contactError.style.display = 'none'; contactInput.classList.remove('input-invalid'); validateContact(false); });
+            contactInput.addEventListener('blur', () => validateContact(true));
+        }
 
         if (passwordInput && passwordToggle) {
             passwordToggle.addEventListener('click', () => {
@@ -189,10 +276,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (passwordInput && strengthMeter) {
+        if (passwordInput) {
             passwordInput.addEventListener('input', () => {
-                updatePasswordStrength(passwordInput.value);
+                passwordError.style.display = 'none';
+                passwordInput.classList.remove('input-invalid');
+                validatePassword(false);
+                if (strengthMeter) updatePasswordStrength(passwordInput.value);
             });
+            passwordInput.addEventListener('blur', () => validatePassword(true));
         }
     }
 
@@ -203,26 +294,103 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!token) {
             showSystemToast('Error', 'Invalid or missing reset token.', 'error');
             setTimeout(() => window.location.href = 'login.html', 2000);
-        } else {
-            const resetForm = document.getElementById('reset-password-form');
-            if (resetForm) {
-                resetForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const newPassword = document.getElementById('reset-password').value;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/reset-password`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ token, newPassword })
-                        });
-                        const data = await response.json();
-                        if (response.ok) { showSystemToast('Success', data.message); setTimeout(() => window.location.href = 'login.html', 2000); } 
-                        else { showSystemToast('Error', data.message, 'error'); }
-                    } catch (error) {
-                        showSystemToast('Error', 'Error connecting to server.', 'error');
-                    }
-                });
+            return; // Stop execution if no token
+        }
+
+        const resetForm = document.getElementById('reset-password-form');
+        const passwordInput = document.getElementById('reset-password');
+        const confirmPasswordInput = document.getElementById('confirm-reset-password');
+        const passwordError = document.getElementById('reset-password-error');
+        const confirmPasswordError = document.getElementById('confirm-password-error');
+        const submitBtn = document.getElementById('reset-submit-btn');
+        const toggle1 = document.getElementById('password-toggle-1');
+        const toggle2 = document.getElementById('password-toggle-2');
+
+        let isPasswordValid = false;
+        let isConfirmPasswordValid = false;
+
+        function updateResetSubmitBtn() {
+            if (submitBtn) submitBtn.disabled = !(isPasswordValid && isConfirmPasswordValid);
+        }
+
+        function validateResetPassword(onBlur) {
+            const val = passwordInput.value;
+            const hasUpper = /[A-Z]/.test(val);
+            const hasLower = /[a-z]/.test(val);
+            const hasNum = /[0-9]/.test(val);
+            const hasSpec = /[@#$!%*?&]/.test(val);
+            const hasLen = val.length >= 8;
+            
+            isPasswordValid = hasUpper && hasLower && hasNum && hasSpec && hasLen;
+
+            if (isPasswordValid) {
+                passwordInput.classList.add('input-valid');
+                passwordInput.classList.remove('input-invalid');
+                passwordError.style.display = 'none';
+            } else {
+                passwordInput.classList.remove('input-valid');
+                if (onBlur) {
+                    passwordInput.classList.add('input-invalid');
+                    passwordError.textContent = "Password must be 8+ chars with uppercase, number & special character";
+                    passwordError.style.display = 'block';
+                }
             }
+            // Also validate confirm password field as it depends on this one
+            if (confirmPasswordInput.value) {
+                validateConfirmPassword(onBlur);
+            }
+            updateResetSubmitBtn();
+        }
+
+        function validateConfirmPassword(onBlur) {
+            const passwordVal = passwordInput.value;
+            const confirmVal = confirmPasswordInput.value;
+            
+            isConfirmPasswordValid = (confirmVal.length > 0 && passwordVal === confirmVal && isPasswordValid);
+
+            if (isConfirmPasswordValid) {
+                confirmPasswordInput.classList.add('input-valid');
+                confirmPasswordInput.classList.remove('input-invalid');
+                confirmPasswordError.style.display = 'none';
+            } else {
+                confirmPasswordInput.classList.remove('input-valid');
+                if (onBlur) {
+                    confirmPasswordInput.classList.add('input-invalid');
+                    confirmPasswordError.textContent = "Passwords do not match.";
+                    confirmPasswordError.style.display = 'block';
+                }
+            }
+            updateResetSubmitBtn();
+        }
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', () => { passwordError.style.display = 'none'; passwordInput.classList.remove('input-invalid'); validateResetPassword(false); });
+            passwordInput.addEventListener('blur', () => validateResetPassword(true));
+        }
+
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', () => { confirmPasswordError.style.display = 'none'; confirmPasswordInput.classList.remove('input-invalid'); validateConfirmPassword(false); });
+            confirmPasswordInput.addEventListener('blur', () => validateConfirmPassword(true));
+        }
+
+        if (toggle1) { toggle1.addEventListener('click', () => { const isPassword = passwordInput.getAttribute('type') === 'password'; passwordInput.setAttribute('type', isPassword ? 'text' : 'password'); toggle1.textContent = isPassword ? '🙈' : '👁️'; }); }
+        if (toggle2) { toggle2.addEventListener('click', () => { const isPassword = confirmPasswordInput.getAttribute('type') === 'password'; confirmPasswordInput.setAttribute('type', isPassword ? 'text' : 'password'); toggle2.textContent = isPassword ? '🙈' : '👁️'; }); }
+
+        if (resetForm) {
+            resetForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                validateResetPassword(true);
+                validateConfirmPassword(true);
+                if (!isPasswordValid || !isConfirmPasswordValid) { showSystemToast('Error', 'Please correct the errors before submitting.', 'error'); return; }
+                const newPassword = passwordInput.value;
+                submitBtn.disabled = true; submitBtn.innerText = 'Resetting...';
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, newPassword }) });
+                    const data = await response.json();
+                    if (response.ok) { showSystemToast('Success', data.message); setTimeout(() => window.location.href = 'login.html', 2000); } 
+                    else { showSystemToast('Error', data.message, 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Reset Password'; }
+                } catch (error) { showSystemToast('Error', 'Error connecting to server.', 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Reset Password'; }
+            });
         }
     }
 
@@ -852,12 +1020,17 @@ function updatePasswordStrength(password) {
     if (!strengthMeter) return;
     
     const bars = strengthMeter.querySelectorAll('.strength-bar');
-    let strength = 0;
+    let conditionsMet = 0;
 
-    if (password.length >= 8) strength++;
-    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
-    if (password.match(/[0-9]/)) strength++;
-    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    if (password.match(/[a-z]/)) conditionsMet++;
+    if (password.match(/[A-Z]/)) conditionsMet++;
+    if (password.match(/[0-9]/)) conditionsMet++;
+    if (password.match(/[@#$!%*?&]/)) conditionsMet++;
+
+    let strength = 0;
+    if (conditionsMet >= 1 && conditionsMet <= 2) strength = 1;
+    else if (conditionsMet === 3) strength = 2;
+    else if (conditionsMet === 4 && password.length >= 8) strength = 3;
 
     bars.forEach((bar, index) => {
         bar.className = 'strength-bar'; // Reset
@@ -865,7 +1038,6 @@ function updatePasswordStrength(password) {
             if (strength === 1) bar.classList.add('weak');
             else if (strength === 2) bar.classList.add('medium');
             else if (strength === 3) bar.classList.add('strong');
-            else if (strength === 4) bar.classList.add('very-strong');
         }
     });
 }
@@ -941,6 +1113,7 @@ function switchAdminTab(tabId) {
     else if (tabId === 'tab-menu') loadAdminMenu();
     else if (tabId === 'tab-tiffin') loadAdminTiffin();
     else if (tabId === 'tab-customers') loadAdminCustomers();
+    else if (tabId === 'tab-users') loadAdminUsers();
 }
 
 function toggleSidebar() {
@@ -1531,6 +1704,117 @@ async function viewCustomerHistory(contact, name) {
     } catch (error) {
         showSystemToast('Error', 'Error fetching customer history.', 'error');
     }
+}
+
+/* --- Admin User Control --- */
+let allAdminUsersList = [];
+
+async function loadAdminUsers() {
+    const container = document.getElementById('admin-users-container');
+    if (!container) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE_URL}/api/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const users = await res.json();
+
+        if (!Array.isArray(users) || users.length === 0) {
+            container.innerHTML = '<p class="empty-cart">No users found.</p>';
+            return;
+        }
+
+        allAdminUsersList = users;
+
+        const searchHtml = `
+            <input type="text" id="user-search-input" placeholder="Search users by name or contact..." style="background: var(--admin-card-bg); border: 1px solid var(--admin-border); border-radius: 8px; padding: 10px 14px; color: var(--admin-text-main); width: 100%; max-width: 400px; margin-bottom: 1rem;" oninput="filterAdminUsers()">
+        `;
+
+        container.innerHTML = searchHtml + '<div id="admin-users-table-container"></div>';
+        renderAdminUsersTable(allAdminUsersList);
+    } catch (error) {
+        container.innerHTML = '<p style="color:red;">Error loading users.</p>';
+    }
+}
+
+function filterAdminUsers() {
+    const term = document.getElementById('user-search-input')?.value.toLowerCase() || '';
+    const filtered = allAdminUsersList.filter(u => 
+        (u.name || '').toLowerCase().includes(term) || 
+        (u.contact || '').toLowerCase().includes(term)
+    );
+    renderAdminUsersTable(filtered);
+}
+
+function renderAdminUsersTable(users) {
+    const container = document.getElementById('admin-users-table-container');
+    if (!container) return;
+
+    if (users.length === 0) {
+        container.innerHTML = '<p class="empty-cart">No users match your search.</p>';
+        return;
+    }
+
+    let html = '<div style="overflow-x: auto;"><table style="width:100%; border-collapse: collapse; background: var(--admin-card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 5px; overflow: hidden; min-width: 800px;">';
+    html += '<tr style="background: var(--admin-sidebar); color: var(--admin-sidebar-text); text-align: left;"><th style="padding: 1rem;">User Details</th><th style="padding: 1rem;">Role</th><th style="padding: 1rem;">Status</th><th style="padding: 1rem;">Actions</th></tr>';
+    
+    users.forEach(user => {
+        const isAdmin = user.role === 'admin';
+        const isTrusted = user.isTrusted;
+        const isVerified = user.isVerified;
+        const safeId = escapeHTML(user._id);
+
+        html += `
+            <tr style="border-bottom: 1px solid var(--admin-border);">
+                <td style="padding: 1rem;">
+                    <div style="font-weight: 500; color: var(--admin-text-main);">${escapeHTML(user.name || 'Guest')}</div>
+                    <div style="font-size: 0.85rem; color: var(--admin-text-muted);">${escapeHTML(user.contact)}</div>
+                </td>
+                <td style="padding: 1rem;">
+                    <span style="background: ${isAdmin ? '#8b5cf6' : '#6b7280'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.85rem;">${isAdmin ? 'Admin' : 'User'}</span>
+                </td>
+                <td style="padding: 1rem; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="background: ${isVerified ? '#22c55e' : '#f97316'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; width: fit-content;">${isVerified ? 'Verified' : 'Unverified'}</span>
+                    <span style="background: ${isTrusted ? '#3b82f6' : '#6b7280'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; width: fit-content;">${isTrusted ? 'Trusted (COD Allowed)' : 'Standard'}</span>
+                </td>
+                <td style="padding: 1rem;">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: ${isAdmin ? '#4b5563' : '#8b5cf6'}; color: white; border: none; border-radius: 4px;" onclick="toggleUserRole('${safeId}', '${isAdmin ? 'user' : 'admin'}')">${isAdmin ? 'Revoke Admin' : 'Make Admin'}</button>
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: ${isTrusted ? '#4b5563' : '#3b82f6'}; color: white; border: none; border-radius: 4px;" onclick="toggleUserTrust('${safeId}', ${!isTrusted})">${isTrusted ? 'Revoke Trust' : 'Mark Trusted'}</button>
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: ${isVerified ? '#4b5563' : '#22c55e'}; color: white; border: none; border-radius: 4px;" onclick="toggleUserVerification('${safeId}', ${!isVerified})">${isVerified ? 'Unverify' : 'Verify'}</button>
+                        <button class="btn-order" style="padding: 6px 10px; font-size: 11px; background: #dc2626; color: white; border: none; border-radius: 4px;" onclick="deleteAdminUser('${safeId}')">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    html += '</table></div>';
+    container.innerHTML = html;
+}
+
+async function toggleUserRole(id, newRole) {
+    if(!confirm(`Are you sure you want to make this user an ${newRole}?`)) return;
+    _adminApiCall(`/api/admin/users/${id}/role`, 'PUT', { role: newRole });
+}
+async function toggleUserTrust(id, isTrusted) {
+    _adminApiCall(`/api/admin/users/${id}/trust`, 'PUT', { isTrusted });
+}
+async function toggleUserVerification(id, isVerified) {
+    _adminApiCall(`/api/admin/users/${id}/verify`, 'PUT', { isVerified });
+}
+async function deleteAdminUser(id) {
+    if(!confirm(`Are you sure you want to permanently delete this user account? This action cannot be undone.`)) return;
+    _adminApiCall(`/api/admin/users/${id}`, 'DELETE');
+}
+async function _adminApiCall(url, method, body = null) {
+    const token = localStorage.getItem('authToken');
+    try {
+        const options = { method, headers: { 'Authorization': `Bearer ${token}` } };
+        if (body) { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body); }
+        const res = await fetch(API_BASE_URL + url, options);
+        const data = await res.json();
+        if (res.ok) { showSystemToast('Success', data.message || 'Success'); loadAdminUsers(); }
+        else { showSystemToast('Error', data.message || 'Operation failed.', 'error'); }
+    } catch (e) { showSystemToast('Error', 'Network error', 'error'); }
 }
 
 let trackingInterval = null;
@@ -3162,26 +3446,139 @@ async function verifyStripeSession(sessionId) {
     }
 }
 
+// --- Error Handling Utilities ---
+function showTopCenterToast(type, message, retryCallback = null) {
+    let container = document.getElementById('top-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'top-toast-container';
+        container.className = 'top-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const existingToast = container.querySelector('.top-toast');
+    if (existingToast) {
+        const existingMsg = existingToast.querySelector('.top-toast-msg').textContent;
+        if (existingMsg === message) {
+            existingToast.classList.remove('shake');
+            void existingToast.offsetWidth; // trigger reflow
+            existingToast.classList.add('shake');
+            return;
+        } else {
+            existingToast.remove(); 
+        }
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'top-toast';
+    const icon = type === 'error' ? '❌' : '⚠️';
+    const borderColor = type === 'error' ? '#dc3545' : '#f39c12';
+    const title = type === 'error' ? 'Error' : 'Notice';
+    toast.style.borderLeftColor = borderColor;
+
+    let retryHtml = retryCallback ? `<button class="top-toast-retry" style="margin-top: 8px; background: transparent; border: 1px solid ${borderColor}; color: ${borderColor}; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.2s;">Retry</button>` : '';
+
+    toast.innerHTML = `
+        <div style="font-size: 16px; margin-top: 2px;">${icon}</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 600; font-size: 14px; color: #333; margin-bottom: 2px;">${title}</div>
+            <div class="top-toast-msg" style="font-size: 13px; color: #666; line-height: 1.4;">${escapeHTML(message)}</div>
+            ${retryHtml}
+        </div>
+        <button class="top-toast-close" style="background: none; border: none; font-size: 16px; color: #999; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    const removeToast = () => { if (toast.parentElement) toast.remove(); };
+    const timeoutId = setTimeout(removeToast, 3000); // Auto-dismiss after 3s
+
+    toast.querySelector('.top-toast-close').addEventListener('click', () => {
+        clearTimeout(timeoutId);
+        removeToast();
+    });
+
+    if (retryCallback) {
+        const retryBtn = toast.querySelector('.top-toast-retry');
+        retryBtn.addEventListener('click', () => {
+            clearTimeout(timeoutId);
+            removeToast();
+            retryCallback();
+        });
+        retryBtn.addEventListener('mouseenter', () => { retryBtn.style.background = borderColor; retryBtn.style.color = '#fff'; });
+        retryBtn.addEventListener('mouseleave', () => { retryBtn.style.background = 'transparent'; retryBtn.style.color = borderColor; });
+    }
+}
+
+function showFieldError(fieldName, message, isHtml = false) {
+    const input = document.getElementById(fieldName);
+    const errorEl = document.getElementById(fieldName + '-error');
+    if (input) {
+        input.classList.remove('input-valid');
+        input.classList.add('input-invalid');
+    }
+    if (errorEl) {
+        if (isHtml) errorEl.innerHTML = message;
+        else errorEl.textContent = message;
+        errorEl.style.display = 'block';
+    }
+}
+
+function clearAllErrors() {
+    document.querySelectorAll('.auth-form .input-invalid').forEach(el => el.classList.remove('input-invalid'));
+    document.querySelectorAll('.auth-form .error-text').forEach(el => {
+        el.style.display = 'none';
+        el.innerHTML = '';
+    });
+}
+
 /* --- Authentication Functions --- */
 async function handleRegistration(event) {
-    event.preventDefault();
-    const name = document.getElementById('reg-name').value;
-    const contact = document.getElementById('reg-contact').value.trim();
-    const password = document.getElementById('reg-password').value;
+    if (event) event.preventDefault();
+    
+    clearAllErrors();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^(?:\+91[\-\s]?)?\d{10}$/;
-    if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
-        showSystemToast('Error', 'Please enter a valid email address or a 10-digit phone number.', 'error');
-        return;
+    const nameInput = document.getElementById('reg-name');
+    const contactInput = document.getElementById('reg-contact');
+    const passwordInput = document.getElementById('reg-password');
+    
+    const name = nameInput ? nameInput.value.trim() : '';
+    const contact = contactInput ? contactInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value : '';
+
+    // Pre-flight frontend validation
+    const nameValid = /^[a-zA-Z\s]+$/.test(name) && name.length >= 3 && name.length <= 50;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+    const phoneValid = /^[6-9]\d{9}$/.test(contact);
+    const contactValid = emailValid || phoneValid;
+    const passValid = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$!%*?&]).{8,}/.test(password);
+
+    let hasErrors = false;
+    if (!nameValid) { showFieldError('reg-name', 'Please enter a valid full name (letters only, min 3 chars)'); hasErrors = true; }
+    if (!contactValid) { showFieldError('reg-contact', 'Enter a valid email address or 10-digit phone number'); hasErrors = true; }
+    if (!passValid) { showFieldError('reg-password', 'Password must be 8+ chars with uppercase, number & special character'); hasErrors = true; }
+
+    if (hasErrors) return;
+
+    const submitBtn = document.getElementById('reg-submit-btn');
+    
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="btn-spinner"></span>Creating account...';
     }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s Timeout
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, contact, password })
+            body: JSON.stringify({ name, contact, password }),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         const data = await response.json();
 
         if (response.ok) {
@@ -3189,15 +3586,36 @@ async function handleRegistration(event) {
                 showSystemToast('Success', 'Verification code sent!');
                 showOtpModal(contact);
             } else {
-                showSystemToast('Success', 'Account created successfully! Redirecting...');
+                showSystemToast('Success', 'Account created successfully! Welcome to Kajal Kitchen 🎉');
                 setTimeout(() => { window.location.href = 'login.html'; }, 1500);
             }
         } else {
-            showSystemToast('Error', data.message || 'Registration failed.', 'error');
+            // 1. Check for Duplicate Account via 409 status or string match
+            if (response.status === 409 || (data.message && data.message.toLowerCase().includes('already exists'))) {
+                showFieldError('reg-contact', 'This email/phone is already registered. Try logging in instead. <a href="login.html" style="color:#dc3545; text-decoration:underline; font-weight:bold; margin-left:4px;">Log in here →</a>', true);
+            } 
+            // 2. Field-specific validation from server
+            else if (data.message && data.message.toLowerCase().includes('name')) {
+                showFieldError('reg-name', data.message);
+            }
+            else if (data.message && data.message.toLowerCase().includes('password')) {
+                showFieldError('reg-password', data.message);
+            }
+            // 3. General Server Error (500, 503)
+            else {
+                showTopCenterToast('error', data.message || 'Something went wrong on our end. Please try again in a moment.');
+            }
         }
     } catch (error) {
-        console.error('Registration Error:', error);
-        showSystemToast('Error', 'Network Error: Could not connect to the server.', 'error');
+        if (error.name === 'AbortError') {
+            showTopCenterToast('error', 'Request timed out. Please try again.', () => handleRegistration(event));
+        } else if (error.message.includes('Failed to fetch') || error instanceof TypeError) {
+            showTopCenterToast('error', 'No internet connection. Please check your network and try again.', () => handleRegistration(event));
+        } else {
+            showTopCenterToast('error', 'Something went wrong on our end. Please try again in a moment.');
+        }
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Create account'; }
     }
 }
 

@@ -2314,6 +2314,52 @@ footer a:hover {
     }
 }
 
+/* Top Center Error Toast (Non-Stacking) */
+.top-toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    width: 100%;
+    max-width: 420px;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    padding: 0 16px; /* 16px margin for mobile */
+    box-sizing: border-box;
+}
+
+.top-toast {
+    background: #fff;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    pointer-events: auto;
+    animation: slideDownToast 0.3s ease-out forwards;
+}
+
+.top-toast.shake {
+    animation: shakeToast 0.4s ease-in-out;
+}
+
+@keyframes slideDownToast {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shakeToast {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+}
+
 /* Payment Page Styles */
 .payment-page {
     background: #faf8f4 !important;
@@ -2961,6 +3007,40 @@ body.admin-body {
     color: #aaa;
 }
 
+.auth-form input.input-valid {
+    border-color: #28a745 !important;
+}
+
+.auth-form input.input-invalid {
+    border-color: #dc3545 !important;
+}
+
+.error-text {
+    font-size: 12px;
+    color: #dc3545;
+    margin-top: 4px;
+    display: none;
+}
+
+.otp-box {
+    width: 45px;
+    height: 52px;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: bold;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    color: #333;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.otp-box:focus {
+    outline: none;
+    border-color: #E07B2D;
+    box-shadow: 0 0 0 3px rgba(224, 123, 45, 0.2);
+}
+
 .password-wrapper {
     position: relative;
 }
@@ -2998,10 +3078,9 @@ body.admin-body {
     transition: background-color 0.3s;
 }
 
-.strength-bar.weak { background-color: #e74c3c; }
+.strength-bar.weak { background-color: #dc3545; }
 .strength-bar.medium { background-color: #f39c12; }
 .strength-bar.strong { background-color: #27ae60; }
-.strength-bar.very-strong { background-color: #2ecc71; }
 
 .btn-full {
     width: 100%;
@@ -3019,6 +3098,24 @@ body.admin-body {
 .btn-full:hover {
     background-color: #c96d27;
 }
+
+.btn-full:disabled {
+    background-color: #f0b58e;
+    cursor: not-allowed;
+}
+
+.btn-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .divider {
     display: flex;
